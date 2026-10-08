@@ -1,0 +1,24 @@
+{
+  "name": "college-erp-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "College ERP Mobile Application & Backend Suite",
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../mobile && npm install",
+    "db:seed": "cd backend && npm run db:seed",
+    "dev:backend": "cd backend && npm run dev",
+    "build:backend": "cd backend && npm run build",
+    "start:mobile": "cd mobile && npm run start",
+    "test:backend": "cd backend && npm test"
+  },
+  "keywords": [
+    "college-erp",
+    "react-native",
+    "expo",
+    "express",
+    "typescript",
+    "mysql"
+  ],
+  "author": "College ERP Architecture Team",
+  "license": "MIT"
+}
