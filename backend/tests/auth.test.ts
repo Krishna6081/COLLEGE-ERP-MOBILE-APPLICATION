@@ -1,7 +1,18 @@
 import request from 'supertest';
 import app from '../src/app';
+import { pool } from '../src/config/database';
 
 describe('Auth API Integration Tests', () => {
+  let studentAccessToken: string;
+  let studentRefreshToken: string;
+  let adminAccessToken: string;
+
+  afterAll(async () => {
+    try {
+      await pool.end();
+    } catch (e) {}
+  });
+
   it('GET / should return server online status', async () => {
     const res = await request(app).get('/');
     expect(res.status).toBe(200);
@@ -9,26 +20,276 @@ describe('Auth API Integration Tests', () => {
     expect(res.body.name).toContain('College ERP');
   });
 
-  it('POST /api/v1/auth/login with valid credentials should return access token', async () => {
-    const res = await request(app).post('/api/v1/auth/login').send({
-      identifier: 'student_alex',
-      password: 'password123',
+  describe('5.1 Login Credentials: Email, Username, Mobile + Password', () => {
+    it('should login successfully with username', async () => {
+      const res = await request(app).post('/api/v1/auth/login').send({
+        identifier: 'student_alex',
+        password: 'password123',
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.accessToken).toBeDefined();
+      expect(res.body.data.refreshToken).toBeDefined();
+      expect(res.body.data.user.username).toBe('student_alex');
+      expect(res.body.data.user.user_type).toBe('STUDENT');
+      studentAccessToken = res.body.data.accessToken;
+      studentRefreshToken = res.body.data.refreshToken;
     });
 
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.accessToken).toBeDefined();
-    expect(res.body.data.user.username).toBe('student_alex');
-    expect(res.body.data.user.user_type).toBe('STUDENT');
+    it('should login successfully with email', async () => {
+      const res = await request(app).post('/api/v1/auth/login').send({
+        identifier: 'alex.johnson@student.mit-eng.edu',
+        password: 'password123',
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.user.email).toBe('alex.johnson@student.mit-eng.edu');
+    });
+
+    it('should login successfully with mobile number', async () => {
+      const res = await request(app).post('/api/v1/auth/login').send({
+        identifier: '+919900000008',
+        password: 'password123',
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.user.username).toBe('student_alex');
+    });
+
+    it('should fail with invalid password (401)', async () => {
+      const res = await request(app).post('/api/v1/auth/login').send({
+        identifier: 'student_alex',
+        password: 'wrongpassword',
+      });
+
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should fail with missing password (400)', async () => {
+      const res = await request(app).post('/api/v1/auth/login').send({
+        identifier: 'student_alex',
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
   });
 
-  it('POST /api/v1/auth/login with invalid password should fail', async () => {
-    const res = await request(app).post('/api/v1/auth/login').send({
-      identifier: 'student_alex',
-      password: 'wrongpassword',
+  describe('5.2 Optional: OTP Login & Google Authentication', () => {
+    let generatedOtp: string;
+
+    it('POST /api/v1/auth/otp/send should dispatch 6-digit OTP', async () => {
+      const res = await request(app).post('/api/v1/auth/otp/send').send({
+        identifier: '+919900000008',
+        purpose: 'LOGIN',
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.debugOtp).toBeDefined();
+      generatedOtp = res.body.data.debugOtp;
     });
 
-    expect(res.status).toBe(401);
-    expect(res.body.success).toBe(false);
+    it('POST /api/v1/auth/otp/verify with valid OTP should login user', async () => {
+      const res = await request(app).post('/api/v1/auth/otp/verify').send({
+        identifier: '+919900000008',
+        otp: generatedOtp || '123456',
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.accessToken).toBeDefined();
+      expect(res.body.data.user.username).toBe('student_alex');
+    });
+
+    it('POST /api/v1/auth/otp/verify with invalid OTP should fail', async () => {
+      const res = await request(app).post('/api/v1/auth/otp/verify').send({
+        identifier: '+919900000008',
+        otp: '999999',
+      });
+
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('POST /api/v1/auth/google should authenticate google user', async () => {
+      const res = await request(app).post('/api/v1/auth/google').send({
+        email: 'alex.johnson@student.mit-eng.edu',
+        name: 'Alex Johnson',
+        avatarUrl: 'https://example.com/avatar.jpg',
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.accessToken).toBeDefined();
+      expect(res.body.data.user.email).toBe('alex.johnson@student.mit-eng.edu');
+    });
+  });
+
+  describe('5.2 Token Lifecycle: Refresh, Access Token Validation, Logout', () => {
+    it('GET /api/v1/auth/me with valid Bearer token should return user profile', async () => {
+      const res = await request(app)
+        .get('/api/v1/auth/me')
+        .set('Authorization', `Bearer ${studentAccessToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.username).toBe('student_alex');
+      expect(res.body.data.roles).toContain('STUDENT');
+    });
+
+    it('GET /api/v1/auth/me without token should return 401', async () => {
+      const res = await request(app).get('/api/v1/auth/me');
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('POST /api/v1/auth/refresh-token with valid refresh token should yield new access token', async () => {
+      const res = await request(app).post('/api/v1/auth/refresh-token').send({
+        refreshToken: studentRefreshToken,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.accessToken).toBeDefined();
+    });
+
+    it('POST /api/v1/auth/logout should revoke token session', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/logout')
+        .set('Authorization', `Bearer ${studentAccessToken}`)
+        .send({ refreshToken: studentRefreshToken });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+  });
+
+  describe('5.2 Password Management: Forgot, Reset, and Change Password', () => {
+    let resetOtp: string;
+
+    it('POST /api/v1/auth/forgot-password should generate reset OTP/token', async () => {
+      const res = await request(app).post('/api/v1/auth/forgot-password').send({
+        identifier: 'alex.johnson@student.mit-eng.edu',
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.debugOtp).toBeDefined();
+      resetOtp = res.body.data.debugOtp;
+    });
+
+    it('POST /api/v1/auth/reset-password with valid OTP should update password', async () => {
+      const res = await request(app).post('/api/v1/auth/reset-password').send({
+        identifier: 'alex.johnson@student.mit-eng.edu',
+        otp: resetOtp || '123456',
+        newPassword: 'newPassword123',
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.message).toContain('Password reset');
+
+      // Verify login with new password
+      const loginRes = await request(app).post('/api/v1/auth/login').send({
+        identifier: 'alex.johnson@student.mit-eng.edu',
+        password: 'newPassword123',
+      });
+      expect(loginRes.status).toBe(200);
+      studentAccessToken = loginRes.body.data.accessToken;
+    });
+
+    it('POST /api/v1/auth/change-password should change password for logged-in user', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/change-password')
+        .set('Authorization', `Bearer ${studentAccessToken}`)
+        .send({
+          currentPassword: 'newPassword123',
+          newPassword: 'password123', // Reset back to default
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+
+    it('POST /api/v1/auth/change-password with wrong current password should fail (401)', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/change-password')
+        .set('Authorization', `Bearer ${studentAccessToken}`)
+        .send({
+          currentPassword: 'incorrectPassword',
+          newPassword: 'someNewPassword',
+        });
+
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+    });
+  });
+
+  describe('5.2 & 5.3 RBAC Authorization: Account Activation / Deactivation', () => {
+    it('Admin login to obtain administrative JWT', async () => {
+      const res = await request(app).post('/api/v1/auth/login').send({
+        identifier: 'superadmin',
+        password: 'password123',
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.user.user_type).toBe('SUPER_ADMIN');
+      adminAccessToken = res.body.data.accessToken;
+    });
+
+    it('Student should receive 403 Forbidden when attempting to deactivate account', async () => {
+      const res = await request(app)
+        .patch('/api/v1/auth/users/user-student2/status')
+        .set('Authorization', `Bearer ${studentAccessToken}`)
+        .send({ status: 'INACTIVE' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('Super Admin should successfully deactivate user account', async () => {
+      const res = await request(app)
+        .patch('/api/v1/auth/users/user-student2/status')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .send({ status: 'INACTIVE' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.status).toBe('INACTIVE');
+    });
+
+    it('Deactivated user should NOT be able to log in', async () => {
+      const res = await request(app).post('/api/v1/auth/login').send({
+        identifier: 'student_emma',
+        password: 'password123',
+      });
+
+      expect(res.status).toBe(401);
+      expect(res.body.message).toContain('inactive or blocked');
+    });
+
+    it('Super Admin should reactivate user account', async () => {
+      const res = await request(app)
+        .patch('/api/v1/auth/users/user-student2/status')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .send({ status: 'ACTIVE' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.status).toBe('ACTIVE');
+
+      // Verify reactivated user can log in again
+      const loginRes = await request(app).post('/api/v1/auth/login').send({
+        identifier: 'student_emma',
+        password: 'password123',
+      });
+      expect(loginRes.status).toBe(200);
+      expect(loginRes.body.success).toBe(true);
+    });
   });
 });

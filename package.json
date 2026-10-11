@@ -4,12 +4,13 @@
   "private": true,
   "description": "College ERP Mobile Application & Backend Suite",
   "scripts": {
-    "install:all": "npm install && cd backend && npm install && cd ../mobile && npm install",
-    "db:seed": "cd backend && npm run db:seed",
+    "start": "npm run start:mobile",
+    "start:mobile": "cd mobile && npx expo start",
     "dev:backend": "cd backend && npm run dev",
     "build:backend": "cd backend && npm run build",
-    "start:mobile": "cd mobile && npm run start",
-    "test:backend": "cd backend && npm test"
+    "db:seed": "cd backend && npm run db:seed",
+    "test:backend": "cd backend && npm test",
+    "install:all": "npm install && cd backend && npm install && cd ../mobile && npm install"
   },
   "keywords": [
     "college-erp",

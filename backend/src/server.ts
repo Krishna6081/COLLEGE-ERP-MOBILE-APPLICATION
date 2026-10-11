@@ -5,16 +5,20 @@ import { testDbConnection } from './config/database';
 
 async function bootstrap() {
   const isDbConnected = await testDbConnection();
-  if (!isDbConnected) {
+  if (isDbConnected) {
+    const { ensureAuthTables } = await import('./database/init-auth-tables');
+    await ensureAuthTables();
+  } else {
     logger.info('Running backend in resilient mode with mock data fallbacks enabled.');
   }
 
-  const server = app.listen(env.PORT, () => {
+  const server = app.listen(env.PORT, '0.0.0.0', () => {
     logger.info(`=================================================`);
     logger.info(`  COLLEGE ERP BACKEND SERVER IS RUNNING          `);
     logger.info(`  Port        : ${env.PORT}                     `);
     logger.info(`  Environment : ${env.NODE_ENV}                 `);
-    logger.info(`  Base API    : http://localhost:${env.PORT}/api/v1 `);
+    logger.info(`  Local API   : http://localhost:${env.PORT}/api/v1 `);
+    logger.info(`  Hotspot/LAN : http://10.98.161.149:${env.PORT}/api/v1 `);
     logger.info(`=================================================`);
   });
 

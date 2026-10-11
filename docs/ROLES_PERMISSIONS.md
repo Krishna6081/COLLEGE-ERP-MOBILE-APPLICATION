@@ -1,7 +1,15 @@
 # College ERP Roles & Permissions Matrix
 
 ## System Roles
-1. `SUPER_ADMIN`: Full system-wide administrative control.
+1. `SUPER_ADMIN`: Full system-wide administrative control with responsibilities:
+   - **Manage colleges**: Create, update, list, and deactivate institutions in multi-tenant setup.
+   - **Manage administrators**: Provision college-level administrators and assign campus authorities.
+   - **Manage roles**: Create custom roles and configure security tiers.
+   - **Manage permissions**: Maintain granular module permission matrix.
+   - **Manage system settings**: Global system parameters (attendance criteria, timeouts, alerts).
+   - **View all reports**: Executive dashboards, admissions, fee collections, attendance, performance.
+   - **View audit logs**: Encrypted system audit trail with IP addresses and actor details.
+   - **Manage academic configuration**: Academic sessions, semesters, departments, and programs.
 2. `COLLEGE_ADMIN`: College-level administrative and management operations.
 3. `PRINCIPAL`: High-level oversight, executive dashboards, analytics, announcements.
 4. `VICE_PRINCIPAL`: Operations oversight, academics, attendance, examinations.

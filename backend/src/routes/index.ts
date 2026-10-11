@@ -9,10 +9,12 @@ import feeRoutes from './fee.routes';
 import noticeRoutes from './notice.routes';
 import examRoutes from './exam.routes';
 import { complaintRouter, certificateRouter, libraryRouter, placementRouter } from './auxiliary.routes';
+import superadminRoutes from './superadmin.routes';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
+router.use('/superadmin', superadminRoutes);
 router.use('/students', studentRoutes);
 router.use('/faculty', facultyRoutes);
 router.use('/attendance', attendanceRoutes);

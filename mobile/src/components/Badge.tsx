@@ -1,15 +1,19 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors } from '../constants/colors';
 
 interface BadgeProps {
-  label: string;
-  type?: 'success' | 'warning' | 'danger' | 'info' | 'primary';
+  label?: string;
+  text?: string;
+  type?: 'success' | 'warning' | 'danger' | 'info' | 'primary' | 'neutral';
+  variant?: 'success' | 'warning' | 'danger' | 'info' | 'primary' | 'neutral';
 }
 
-export const Badge: React.FC<BadgeProps> = ({ label, type = 'primary' }) => {
+export const Badge: React.FC<BadgeProps> = ({ label, text, type, variant }) => {
+  const badgeText = label || text || '';
+  const badgeType = type || variant || 'primary';
+
   const getStyles = () => {
-    switch (type) {
+    switch (badgeType) {
       case 'success':
         return { bg: '#DCFCE7', text: '#15803D' };
       case 'warning':
@@ -18,6 +22,8 @@ export const Badge: React.FC<BadgeProps> = ({ label, type = 'primary' }) => {
         return { bg: '#FEE2E2', text: '#B91C1C' };
       case 'info':
         return { bg: '#E0F2FE', text: '#0369A1' };
+      case 'neutral':
+        return { bg: '#F1F5F9', text: '#64748B' };
       default:
         return { bg: '#DBEAFE', text: '#1D4ED8' };
     }
@@ -27,7 +33,7 @@ export const Badge: React.FC<BadgeProps> = ({ label, type = 'primary' }) => {
 
   return (
     <View style={[styles.badge, { backgroundColor: style.bg }]}>
-      <Text style={[styles.text, { color: style.text }]}>{label}</Text>
+      <Text style={[styles.text, { color: style.text }]}>{badgeText}</Text>
     </View>
   );
 };

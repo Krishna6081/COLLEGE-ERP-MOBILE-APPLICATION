@@ -34,6 +34,16 @@ import { CertificatesScreen } from '../screens/certificates/CertificatesScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
 
+// Super Admin Screens
+import { SuperAdminDashboardScreen } from '../screens/admin/SuperAdminDashboardScreen';
+import { CollegesManagementScreen } from '../screens/admin/CollegesManagementScreen';
+import { AdministratorsScreen } from '../screens/admin/AdministratorsScreen';
+import { RolesPermissionsScreen } from '../screens/admin/RolesPermissionsScreen';
+import { SystemSettingsScreen } from '../screens/admin/SystemSettingsScreen';
+import { ReportsScreen } from '../screens/admin/ReportsScreen';
+import { AuditLogsScreen } from '../screens/admin/AuditLogsScreen';
+import { AcademicConfigScreen } from '../screens/admin/AcademicConfigScreen';
+
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -49,6 +59,24 @@ function StudentStack() {
       <Stack.Screen name="Fees" component={FeePaymentScreen} />
       <Stack.Screen name="Library" component={LibraryCatalogScreen} />
       <Stack.Screen name="Placements" component={PlacementDrivesScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function SuperAdminStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="SuperAdminDashboard" component={SuperAdminDashboardScreen} />
+      <Stack.Screen name="CollegesManagement" component={CollegesManagementScreen} />
+      <Stack.Screen name="Administrators" component={AdministratorsScreen} />
+      <Stack.Screen name="RolesPermissions" component={RolesPermissionsScreen} />
+      <Stack.Screen name="SystemSettings" component={SystemSettingsScreen} />
+      <Stack.Screen name="SuperAdminReports" component={ReportsScreen} />
+      <Stack.Screen name="AuditLogs" component={AuditLogsScreen} />
+      <Stack.Screen name="AcademicConfig" component={AcademicConfigScreen} />
+      <Stack.Screen name="StudentList" component={StudentListScreen} />
+      <Stack.Screen name="StudentDetail" component={StudentDetailScreen} />
+      <Stack.Screen name="FacultyList" component={FacultyListScreen} />
     </Stack.Navigator>
   );
 }
@@ -70,6 +98,8 @@ export const RoleBasedNavigator: React.FC = () => {
 
   const getDashboardComponent = () => {
     switch (role) {
+      case 'SUPER_ADMIN':
+        return SuperAdminStack;
       case 'FACULTY':
         return FacultyDashboardScreen;
       case 'HOD':
@@ -78,7 +108,6 @@ export const RoleBasedNavigator: React.FC = () => {
       case 'VICE_PRINCIPAL':
         return PrincipalDashboardScreen;
       case 'COLLEGE_ADMIN':
-      case 'SUPER_ADMIN':
         return AdminStack;
       case 'ACCOUNTANT':
         return AccountantDashboardScreen;

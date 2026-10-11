@@ -1399,4 +1399,48 @@ CREATE TABLE `system_settings` (
   CONSTRAINT `fk_ss_college` FOREIGN KEY (`college_id`) REFERENCES `colleges` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 79. Refresh Tokens
+DROP TABLE IF EXISTS `refresh_tokens`;
+CREATE TABLE `refresh_tokens` (
+  `id` VARCHAR(36) NOT NULL,
+  `user_id` VARCHAR(36) NOT NULL,
+  `token` VARCHAR(500) NOT NULL,
+  `expires_at` DATETIME NOT NULL,
+  `revoked` TINYINT(1) DEFAULT 0,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_rt_user` (`user_id`),
+  KEY `idx_rt_token` (`token`(255)),
+  CONSTRAINT `fk_rt_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 80. OTP Verifications
+DROP TABLE IF EXISTS `otp_verifications`;
+CREATE TABLE `otp_verifications` (
+  `id` VARCHAR(36) NOT NULL,
+  `identifier` VARCHAR(150) NOT NULL,
+  `otp_code` VARCHAR(10) NOT NULL,
+  `purpose` ENUM('LOGIN', 'PASSWORD_RESET') NOT NULL DEFAULT 'LOGIN',
+  `expires_at` DATETIME NOT NULL,
+  `is_verified` TINYINT(1) DEFAULT 0,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_otp_identifier` (`identifier`, `purpose`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 81. Password Resets
+DROP TABLE IF EXISTS `password_resets`;
+CREATE TABLE `password_resets` (
+  `id` VARCHAR(36) NOT NULL,
+  `user_id` VARCHAR(36) NOT NULL,
+  `token` VARCHAR(255) NOT NULL,
+  `expires_at` DATETIME NOT NULL,
+  `used` TINYINT(1) DEFAULT 0,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_pr_user` (`user_id`),
+  KEY `idx_pr_token` (`token`),
+  CONSTRAINT `fk_pr_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

@@ -16,6 +16,10 @@ export class ApiResponse {
     });
   }
 
+  static created<T>(res: Response, message: string, data?: T) {
+    return this.success(res, message, data, 201);
+  }
+
   static paginated<T>(
     res: Response,
     message: string,
