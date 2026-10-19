@@ -1,4 +1,16 @@
 import { Platform, NativeModules } from 'react-native';
+import Constants from 'expo-constants';
+
+const hostFrom = (uri?: string | null): string | undefined => {
+  if (!uri) return undefined;
+  const host = uri
+    .replace(/^[a-z][a-z\d+.-]*:\/\//i, '')
+    .split('/')[0]
+    .replace(/:\d+$/, '');
+
+  if (!host || host === 'localhost' || host === '127.0.0.1') return undefined;
+  return host;
+};
 
 /**
  * Dynamically resolves the development machine's IP address.
@@ -6,20 +18,23 @@ import { Platform, NativeModules } from 'react-native';
  * NativeModules.SourceCode.scriptURL contains the laptop's host IP (e.g. 10.98.161.149:8081).
  */
 const getDevHost = (): string => {
+  const expoHost = hostFrom(Constants.expoConfig?.hostUri);
+  if (expoHost) return expoHost;
+
   try {
-    const scriptURL = NativeModules.SourceCode?.scriptURL;
-    if (scriptURL) {
-      const address = scriptURL.split('://')[1]?.split('/')[0]?.split(':')[0];
-      if (address && address !== 'localhost' && address !== '127.0.0.1') {
-        return address;
-      }
-    }
-  } catch (e) {
-    // ignore
+    const bundleHost = hostFrom(NativeModules.SourceCode?.scriptURL);
+    if (bundleHost) return bundleHost;
+  } catch {
+    // The platform-specific fallback below handles simulator and web builds.
   }
 
-  // Active Mobile Hotspot IP address
-  return '10.98.161.149';
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    return window.location.hostname || 'localhost';
+  }
+
+  // Android emulators reach the host machine through this reserved bridge address.
+  // For a physical device without Expo host metadata, set EXPO_PUBLIC_API_URL.
+  return Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
 };
 
 const devHost = getDevHost();

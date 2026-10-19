@@ -8,7 +8,7 @@ export class DashboardController {
     try {
       const userId = req.user!.id;
       const role = req.user!.user_type || req.user!.roles[0] || 'STUDENT';
-      const data = await DashboardService.getDashboard(userId, role);
+      const data = await DashboardService.getDashboard(userId, role, req.user!.college_id);
       return ApiResponse.success(res, 'Dashboard data fetched', data);
     } catch (error) {
       next(error);

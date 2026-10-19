@@ -1,6 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import { SuperAdminService } from '../services/superadmin.service';
+import type { AuditActorContext } from '../services/superadmin.service';
 import { ApiResponse } from '../utils/api-response';
+import { requireCollegeId } from '../utils/tenant';
+import { AuthenticatedRequest } from '../models/types';
+
+const getAuditActor = (req: Request): AuditActorContext => {
+  const user = (req as AuthenticatedRequest).user;
+  return { user_id: user?.id, ip_address: req.ip };
+};
 
 export class SuperAdminController {
   // 1. Colleges
@@ -18,7 +26,7 @@ export class SuperAdminController {
 
   static async createCollege(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await SuperAdminService.createCollege(req.body);
+      const result = await SuperAdminService.createCollege(req.body, getAuditActor(req));
       return ApiResponse.created(res, 'College created successfully', result);
     } catch (e) {
       next(e);
@@ -36,7 +44,7 @@ export class SuperAdminController {
 
   static async updateCollege(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await SuperAdminService.updateCollege(req.params.id, req.body);
+      const result = await SuperAdminService.updateCollege(req.params.id, req.body, getAuditActor(req));
       return ApiResponse.success(res, 'College updated successfully', result);
     } catch (e) {
       next(e);
@@ -45,7 +53,7 @@ export class SuperAdminController {
 
   static async deleteCollege(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await SuperAdminService.deleteCollege(req.params.id);
+      const result = await SuperAdminService.deleteCollege(req.params.id, getAuditActor(req));
       return ApiResponse.success(res, 'College deactivated successfully', result);
     } catch (e) {
       next(e);
@@ -67,7 +75,7 @@ export class SuperAdminController {
 
   static async createAdministrator(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await SuperAdminService.createAdministrator(req.body);
+      const result = await SuperAdminService.createAdministrator(req.body, getAuditActor(req));
       return ApiResponse.created(res, 'Administrator created successfully', result);
     } catch (e) {
       next(e);
@@ -86,7 +94,7 @@ export class SuperAdminController {
 
   static async createRole(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await SuperAdminService.createRole(req.body);
+      const result = await SuperAdminService.createRole(req.body, getAuditActor(req));
       return ApiResponse.created(res, 'Role created successfully', result);
     } catch (e) {
       next(e);
@@ -95,7 +103,7 @@ export class SuperAdminController {
 
   static async updateRole(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await SuperAdminService.updateRole(req.params.id, req.body);
+      const result = await SuperAdminService.updateRole(req.params.id, req.body, getAuditActor(req));
       return ApiResponse.success(res, 'Role updated successfully', result);
     } catch (e) {
       next(e);
@@ -104,7 +112,7 @@ export class SuperAdminController {
 
   static async deleteRole(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await SuperAdminService.deleteRole(req.params.id);
+      const result = await SuperAdminService.deleteRole(req.params.id, getAuditActor(req));
       return ApiResponse.success(res, 'Role deleted successfully', result);
     } catch (e) {
       next(e);
@@ -133,7 +141,7 @@ export class SuperAdminController {
   static async updateRolePermissions(req: Request, res: Response, next: NextFunction) {
     try {
       const { permissionIds } = req.body;
-      const result = await SuperAdminService.updateRolePermissions(req.params.roleId, permissionIds || []);
+      const result = await SuperAdminService.updateRolePermissions(req.params.roleId, permissionIds || [], getAuditActor(req));
       return ApiResponse.success(res, 'Role permissions updated successfully', result);
     } catch (e) {
       next(e);
@@ -143,7 +151,7 @@ export class SuperAdminController {
   // 5. System Settings
   static async getSystemSettings(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await SuperAdminService.getSystemSettings();
+      const result = await SuperAdminService.getSystemSettings(requireCollegeId(req.query.college_id as string | undefined));
       return ApiResponse.success(res, 'System settings fetched successfully', result);
     } catch (e) {
       next(e);
@@ -153,7 +161,8 @@ export class SuperAdminController {
   static async updateSystemSettings(req: Request, res: Response, next: NextFunction) {
     try {
       const { settings } = req.body;
-      const result = await SuperAdminService.updateSystemSettings(settings || []);
+      const collegeId = requireCollegeId(req.body.college_id);
+      const result = await SuperAdminService.updateSystemSettings(collegeId, settings || [], getAuditActor(req));
       return ApiResponse.success(res, 'System settings updated successfully', result);
     } catch (e) {
       next(e);
@@ -222,7 +231,8 @@ export class SuperAdminController {
   // 8. Academic Configuration
   static async getAcademicYears(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await SuperAdminService.getAcademicYears();
+      const collegeId = requireCollegeId(req.query.college_id as string | undefined);
+      const result = await SuperAdminService.getAcademicYears(collegeId);
       return ApiResponse.success(res, 'Academic years fetched successfully', result);
     } catch (e) {
       next(e);
@@ -231,7 +241,7 @@ export class SuperAdminController {
 
   static async createAcademicYear(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await SuperAdminService.createAcademicYear(req.body);
+      const result = await SuperAdminService.createAcademicYear(req.body, getAuditActor(req));
       return ApiResponse.created(res, 'Academic year created successfully', result);
     } catch (e) {
       next(e);
@@ -240,7 +250,8 @@ export class SuperAdminController {
 
   static async setCurrentAcademicYear(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await SuperAdminService.setCurrentAcademicYear(req.params.id);
+      const collegeId = requireCollegeId(req.body.college_id);
+      const result = await SuperAdminService.setCurrentAcademicYear(req.params.id, collegeId, getAuditActor(req));
       return ApiResponse.success(res, 'Current academic year updated successfully', result);
     } catch (e) {
       next(e);
@@ -250,7 +261,8 @@ export class SuperAdminController {
   static async getSemesters(req: Request, res: Response, next: NextFunction) {
     try {
       const academicYearId = req.query.academic_year_id as string;
-      const result = await SuperAdminService.getSemesters(academicYearId);
+      const collegeId = requireCollegeId(req.query.college_id as string | undefined);
+      const result = await SuperAdminService.getSemesters(collegeId, academicYearId);
       return ApiResponse.success(res, 'Semesters fetched successfully', result);
     } catch (e) {
       next(e);
@@ -259,7 +271,7 @@ export class SuperAdminController {
 
   static async createSemester(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await SuperAdminService.createSemester(req.body);
+      const result = await SuperAdminService.createSemester(req.body, getAuditActor(req));
       return ApiResponse.created(res, 'Semester created successfully', result);
     } catch (e) {
       next(e);
@@ -268,7 +280,8 @@ export class SuperAdminController {
 
   static async getDepartments(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await SuperAdminService.getDepartments();
+      const collegeId = requireCollegeId(req.query.college_id as string | undefined);
+      const result = await SuperAdminService.getDepartments(collegeId);
       return ApiResponse.success(res, 'Departments fetched successfully', result);
     } catch (e) {
       next(e);
@@ -277,7 +290,7 @@ export class SuperAdminController {
 
   static async createDepartment(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await SuperAdminService.createDepartment(req.body);
+      const result = await SuperAdminService.createDepartment(req.body, getAuditActor(req));
       return ApiResponse.created(res, 'Department created successfully', result);
     } catch (e) {
       next(e);
@@ -286,7 +299,8 @@ export class SuperAdminController {
 
   static async getPrograms(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await SuperAdminService.getPrograms();
+      const collegeId = requireCollegeId(req.query.college_id as string | undefined);
+      const result = await SuperAdminService.getPrograms(collegeId);
       return ApiResponse.success(res, 'Programs fetched successfully', result);
     } catch (e) {
       next(e);
@@ -295,7 +309,7 @@ export class SuperAdminController {
 
   static async createProgram(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await SuperAdminService.createProgram(req.body);
+      const result = await SuperAdminService.createProgram(req.body, getAuditActor(req));
       return ApiResponse.created(res, 'Program created successfully', result);
     } catch (e) {
       next(e);

@@ -20,12 +20,12 @@ type LoginTab = 'PASSWORD' | 'OTP';
 
 export const LoginScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<LoginTab>('PASSWORD');
-  const [identifier, setIdentifier] = useState('student_alex');
-  const [password, setPassword] = useState('password123');
+  const [identifier, setIdentifier] = useState(__DEV__ ? 'student_alex' : '');
+  const [password, setPassword] = useState(__DEV__ ? 'password123' : '');
   const [showPassword, setShowPassword] = useState(false);
 
   // OTP Login states
-  const [otpIdentifier, setOtpIdentifier] = useState('+919900000008');
+  const [otpIdentifier, setOtpIdentifier] = useState(__DEV__ ? '+919900000008' : '');
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
@@ -42,7 +42,7 @@ export const LoginScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const loginStore = useAuthStore((state) => state.login);
 
-  const quickRoles = [
+  const quickRoles = __DEV__ ? [
     { label: 'Student', user: 'student_alex', mobile: '+919900000008' },
     { label: 'Faculty', user: 'faculty_john', mobile: '+919900000006' },
     { label: 'HOD', user: 'hod_cse', mobile: '+919900000005' },
@@ -51,7 +51,7 @@ export const LoginScreen: React.FC = () => {
     { label: 'Accountant', user: 'accountant', mobile: '+919900000011' },
     { label: 'Librarian', user: 'librarian', mobile: '+919900000012' },
     { label: 'Parent', user: 'parent_david', mobile: '+919900000010' },
-  ];
+  ] : [];
 
   /**
    * 1. Password Login (Email, Username, or Mobile + Password)
@@ -91,12 +91,7 @@ export const LoginScreen: React.FC = () => {
       const res = await AuthApi.sendOtp(otpIdentifier.trim(), 'LOGIN');
       if (res.success) {
         setOtpSent(true);
-        if (res.data?.debugOtp) {
-          setOtpCode(res.data.debugOtp);
-          Alert.alert('OTP Sent', `Verification code sent to ${otpIdentifier}.\n(Code: ${res.data.debugOtp})`);
-        } else {
-          Alert.alert('OTP Sent', `Verification code has been sent to ${otpIdentifier}.`);
-        }
+        Alert.alert('OTP Sent', `Verification code has been sent to ${otpIdentifier}.`);
       } else {
         Alert.alert('OTP Error', res.message || 'Could not send OTP.');
       }
@@ -131,26 +126,6 @@ export const LoginScreen: React.FC = () => {
   /**
    * 3. Google Sign-In
    */
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    try {
-      const res = await AuthApi.googleLogin({
-        email: 'alex.johnson@student.mit-eng.edu',
-        name: 'Alex Johnson',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',
-      });
-      if (res.success && res.data) {
-        await loginStore(res.data.user, res.data.accessToken, res.data.refreshToken);
-      } else {
-        Alert.alert('Google Sign-In Failed', res.message || 'Unable to authenticate with Google.');
-      }
-    } catch (error: any) {
-      Alert.alert('Google Auth Error', error?.message || 'Failed to sign in with Google.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   /**
    * 4. Forgot Password Flow
    */
@@ -165,12 +140,7 @@ export const LoginScreen: React.FC = () => {
       const res = await AuthApi.forgotPassword(forgotIdentifier.trim());
       if (res.success) {
         setForgotStep(2);
-        if (res.data?.debugOtp) {
-          setForgotOtp(res.data.debugOtp);
-          Alert.alert('Reset Code Dispatched', `Reset code sent.\n(Code: ${res.data.debugOtp})`);
-        } else {
-          Alert.alert('Reset Code Dispatched', 'Password reset code has been sent.');
-        }
+        Alert.alert('Reset Code Dispatched', 'Password reset code has been sent.');
       } else {
         Alert.alert('Error', res.message || 'Could not find account.');
       }
@@ -220,9 +190,9 @@ export const LoginScreen: React.FC = () => {
         {/* Header Branding */}
         <View style={styles.headerBox}>
           <View style={styles.badgeWrap}>
-            <Text style={styles.badgeText}>CAMPUS ERP 2026</Text>
+            <Text style={styles.badgeText}>COLLEGE ERP</Text>
           </View>
-          <Text style={styles.collegeName}>MIT INSTITUTE OF TECHNOLOGY</Text>
+          <Text style={styles.collegeName}>College Management Portal</Text>
           <Text style={styles.appTitle}>Enterprise ERP Portal</Text>
           <Text style={styles.subtitle}>Role-Based Academic & Administrative Management</Text>
         </View>
@@ -258,7 +228,7 @@ export const LoginScreen: React.FC = () => {
                 style={styles.input}
                 value={identifier}
                 onChangeText={setIdentifier}
-                placeholder="e.g. student_alex or +919900000008"
+                placeholder="Enter your username, email, or phone number"
                 placeholderTextColor="#94A3B8"
                 autoCapitalize="none"
               />
@@ -308,7 +278,7 @@ export const LoginScreen: React.FC = () => {
                   style={[styles.input, { flex: 1 }]}
                   value={otpIdentifier}
                   onChangeText={setOtpIdentifier}
-                  placeholder="+919900000008 or email"
+                  placeholder="Registered phone number or email"
                   placeholderTextColor="#94A3B8"
                   autoCapitalize="none"
                 />
@@ -341,21 +311,8 @@ export const LoginScreen: React.FC = () => {
             </View>
           )}
 
-          {/* Divider */}
-          <View style={styles.dividerBox}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Google Sign-In */}
-          <TouchableOpacity style={styles.googleBtn} onPress={handleGoogleLogin}>
-            <Text style={styles.googleIcon}>🌐</Text>
-            <Text style={styles.googleBtnText}>Continue with Google</Text>
-          </TouchableOpacity>
-
           {/* Quick Demo Switcher */}
-          <Text style={styles.quickLabel}>⚡ TEST DEMO ROLES (1-TAP AUTOFILL):</Text>
+          {__DEV__ && quickRoles.length > 0 && (<><Text style={styles.quickLabel}>⚡ TEST DEMO ROLES (1-TAP AUTOFILL):</Text>
           <View style={styles.chipContainer}>
             {quickRoles.map((role) => (
               <TouchableOpacity
@@ -372,7 +329,7 @@ export const LoginScreen: React.FC = () => {
                 </Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </View></>)}
         </View>
 
         {/* FORGOT & RESET PASSWORD MODAL */}

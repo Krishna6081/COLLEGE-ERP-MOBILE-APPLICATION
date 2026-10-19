@@ -21,7 +21,8 @@ export const RolesPermissionsScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ROLES' | 'PERMISSIONS'>('ROLES');
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Add Custom Role Modal
   const [roleModalVisible, setRoleModalVisible] = useState(false);
@@ -38,14 +39,21 @@ export const RolesPermissionsScreen: React.FC = () => {
 
   const fetchData = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const [rRes, pRes] = await Promise.all([
         SuperAdminApi.getRoles(),
         SuperAdminApi.getPermissions(),
       ]);
-      if (rRes.success && rRes.data) setRoles(rRes.data);
-      if (pRes.success && pRes.data) setPermissions(pRes.data);
-    } catch (e) {
+      if (!rRes.success) throw new Error(rRes.message || 'Could not load roles.');
+      if (!pRes.success) throw new Error(pRes.message || 'Could not load permissions.');
+      if (!Array.isArray(rRes.data) || !Array.isArray(pRes.data)) {
+        throw new Error('The server returned an invalid roles or permissions response.');
+      }
+      setRoles(rRes.data);
+      setPermissions(pRes.data);
+    } catch (e: any) {
+      setLoadError(e?.message || 'Could not load roles and permissions. Check your connection and retry.');
     } finally {
       setLoading(false);
     }
@@ -82,18 +90,20 @@ export const RolesPermissionsScreen: React.FC = () => {
   };
 
   const openPermissionEditor = async (role: Role) => {
-    setSelectedRole(role);
     try {
       const res = await SuperAdminApi.getRolePermissions(role.id);
-      if (res.success && res.data) {
-        setSelectedPermIds(res.data.map((p) => p.id));
-      } else {
-        setSelectedPermIds([]);
+      if (!res.success) {
+        throw new Error(res.message || 'Could not load this role’s permissions.');
       }
-    } catch (e) {
-      setSelectedPermIds([]);
+      if (!Array.isArray(res.data)) {
+        throw new Error('The server returned an invalid permissions response.');
+      }
+      setSelectedRole(role);
+      setSelectedPermIds(res.data.map((p) => p.id));
+      setEditPermsModalVisible(true);
+    } catch (e: any) {
+      Alert.alert('Unable to load permissions', e?.message || 'Check your connection and try again.');
     }
-    setEditPermsModalVisible(true);
   };
 
   const togglePermission = (permId: string) => {
@@ -158,6 +168,11 @@ export const RolesPermissionsScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.scroll}>
         {loading ? (
           <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
+        ) : loadError ? (
+          <View style={styles.loadError}>
+            <Text style={styles.loadErrorText}>{loadError}</Text>
+            <Button title="RETRY" onPress={fetchData} />
+          </View>
         ) : activeTab === 'ROLES' ? (
           <View>
             <Button
@@ -207,7 +222,7 @@ export const RolesPermissionsScreen: React.FC = () => {
                         <Text style={styles.permCode}>{p.code}</Text>
                         {p.description && <Text style={styles.permDesc}>{p.description}</Text>}
                       </View>
-                      <Badge text="ENABLED" variant="success" />
+                      <Badge text="AVAILABLE" variant="info" />
                     </View>
                   </Card>
                 ))}
@@ -314,6 +329,8 @@ export const RolesPermissionsScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  loadError: { alignItems: 'center', padding: 20, marginTop: 24 },
+  loadErrorText: { color: Colors.danger, textAlign: 'center', marginBottom: 8 },
   tabBar: { flexDirection: 'row', backgroundColor: '#FFFFFF', padding: 6, margin: 16, borderRadius: 12 },
   tabBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 },
   tabBtnActive: { backgroundColor: Colors.primary },

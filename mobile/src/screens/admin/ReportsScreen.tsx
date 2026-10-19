@@ -20,9 +20,12 @@ export const ReportsScreen: React.FC = () => {
   const [tab, setTab] = useState<ReportTab>('SUMMARY');
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any>(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const loadReport = async (selected: ReportTab) => {
     setLoading(true);
+    setData(null);
+    setErrorMessage('');
     try {
       let res;
       if (selected === 'SUMMARY') res = await SuperAdminApi.getSummaryReport();
@@ -34,7 +37,9 @@ export const ReportsScreen: React.FC = () => {
       if (res?.success && res.data) {
         setData(res.data);
       }
-    } catch (e) {
+    } catch (e: any) {
+      setData(null);
+      setErrorMessage(e?.message || 'Could not load this report. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -77,19 +82,19 @@ export const ReportsScreen: React.FC = () => {
         {loading ? (
           <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
         ) : !data ? (
-          <Text style={styles.emptyTxt}>No report data available.</Text>
+          <Text style={styles.emptyTxt}>{errorMessage || 'No report data available.'}</Text>
         ) : (
           <View>
             {/* 1. SUMMARY TAB */}
             {tab === 'SUMMARY' && (
               <View>
                 <View style={styles.statsRow}>
-                  <StatCard title="Active Colleges" value={data.kpis?.totalColleges?.toString() || '3'} color={Colors.primary} />
-                  <StatCard title="Total Students" value={data.kpis?.totalStudents?.toLocaleString() || '4,370'} color={Colors.secondary} />
+                  <StatCard title="Active Colleges" value={data.kpis?.totalColleges?.toString() || '—'} color={Colors.primary} />
+                  <StatCard title="Total Students" value={data.kpis?.totalStudents?.toLocaleString() || '—'} color={Colors.secondary} />
                 </View>
                 <View style={styles.statsRow}>
-                  <StatCard title="Fee Collection" value={data.kpis?.totalFeeCollected || '₹14.85 Cr'} color={Colors.accent} />
-                  <StatCard title="Avg Attendance" value={data.kpis?.avgAttendanceRate || '86.4%'} color="#D97706" />
+                  <StatCard title="Fee Collection" value={data.kpis?.totalFeeCollected || '—'} color={Colors.accent} />
+                  <StatCard title="Avg Attendance" value={data.kpis?.avgAttendanceRate || '—'} color="#D97706" />
                 </View>
 
                 <Text style={styles.sectionTitle}>COLLEGE PERFORMANCE SUMMARY</Text>
@@ -122,7 +127,7 @@ export const ReportsScreen: React.FC = () => {
               <View>
                 <Card style={{ padding: 16, marginBottom: 14 }}>
                   <Text style={styles.cardHeaderTitle}>Total Admissions YTD</Text>
-                  <Text style={styles.bigStat}>{data.totalAdmissionsYTD || 2450}</Text>
+                  <Text style={styles.bigStat}>{data.totalAdmissionsYTD ?? '—'}</Text>
                 </Card>
 
                 <Text style={styles.sectionTitle}>QUOTA DISTRIBUTION</Text>

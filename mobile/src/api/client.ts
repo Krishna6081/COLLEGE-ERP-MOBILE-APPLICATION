@@ -22,7 +22,7 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor for refresh-token or network fallback
+// Clear the local session when the API reports an expired or invalid access token.
 apiClient.interceptors.response.use(
   (response) => response.data,
   async (error) => {

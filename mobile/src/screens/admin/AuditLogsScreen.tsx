@@ -16,23 +16,31 @@ import { SuperAdminApi, AuditLog } from '../../api/superadmin.api';
 
 export const AuditLogsScreen: React.FC = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [selectedModule, setSelectedModule] = useState<string>('ALL');
 
   const filterModules = ['ALL', 'COLLEGES', 'RBAC', 'SETTINGS', 'STUDENTS', 'FEES', 'ATTENDANCE', 'ACADEMICS'];
 
   const fetchLogs = async (module?: string) => {
     setLoading(true);
+    setErrorMessage('');
     try {
       const modQuery = module && module !== 'ALL' ? module : undefined;
       const res = await SuperAdminApi.getAuditLogs(1, 50, modQuery);
-      if (res.success && res.data) {
-        setLogs(res.data.logs);
+      if (!res.success || !res.data) {
+        setLogs([]);
+        setErrorMessage(res.message || 'Could not load audit records. Try again.');
+        return;
       }
-    } catch (e) {
+      setLogs(res.data.logs);
+    } catch (error: any) {
+      setLogs([]);
+      setErrorMessage(error?.message || 'Could not load audit records. Check your connection and try again.');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -43,12 +51,11 @@ export const AuditLogsScreen: React.FC = () => {
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchLogs(selectedModule);
-    setRefreshing(false);
   };
 
   return (
     <View style={styles.container}>
-      <Header title="Audit Trail Logs" subtitle="Tamper-Evident System Operations History" />
+      <Header title="Audit Trail Logs" subtitle="System Operations History" />
 
       {/* Module Filter Chips */}
       <View style={styles.filterBar}>
@@ -74,6 +81,13 @@ export const AuditLogsScreen: React.FC = () => {
       >
         {loading ? (
           <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
+        ) : errorMessage ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{errorMessage}</Text>
+            <TouchableOpacity accessibilityRole="button" onPress={() => void fetchLogs(selectedModule)}>
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
+          </View>
         ) : logs.length === 0 ? (
           <Text style={styles.emptyTxt}>No audit records found for this module.</Text>
         ) : (
@@ -90,12 +104,12 @@ export const AuditLogsScreen: React.FC = () => {
 
               <View style={styles.detailRow}>
                 <Text style={styles.label}>👤 Actor:</Text>
-                <Text style={styles.val}>{log.username || 'System Administrator'}</Text>
+                <Text style={styles.val}>{log.username || (log.user_id ? 'Unknown user' : 'System event')}</Text>
               </View>
 
               <View style={styles.detailRow}>
                 <Text style={styles.label}>🌐 IP Address:</Text>
-                <Text style={styles.val}>{log.ip_address || '127.0.0.1'}</Text>
+                <Text style={styles.val}>{log.ip_address || 'Not recorded'}</Text>
               </View>
             </Card>
           ))
@@ -114,6 +128,9 @@ const styles = StyleSheet.create({
   filterChipText: { fontSize: 12, fontWeight: '700', color: Colors.textSecondary },
   filterChipTextActive: { color: '#FFFFFF' },
   scroll: { padding: 16, paddingBottom: 24 },
+  errorBox: { backgroundColor: '#FEF2F2', borderRadius: 12, padding: 16 },
+  errorText: { color: Colors.danger, fontSize: 14, lineHeight: 20 },
+  retryText: { color: Colors.primary, fontWeight: '700', marginTop: 10 },
   card: { padding: 14, marginBottom: 10 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   timestamp: { fontSize: 11, color: Colors.textSecondary, fontWeight: '600' },

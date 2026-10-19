@@ -19,9 +19,9 @@ export const ProfileScreen: React.FC = () => {
               {user?.first_name?.[0] || 'U'}{user?.last_name?.[0] || 'D'}
             </Text>
           </View>
-          <Text style={styles.name}>{user?.first_name || 'Alex'} {user?.last_name || 'Johnson'}</Text>
-          <Text style={styles.role}>{user?.user_type || 'STUDENT'}</Text>
-          <Badge label={user?.college_name || 'MIT Institute of Technology'} type="info" />
+          <Text style={styles.name}>{[user?.first_name, user?.last_name].filter(Boolean).join(' ') || 'Name unavailable'}</Text>
+          <Text style={styles.role}>{user?.user_type || 'Role unavailable'}</Text>
+          <Badge label={user?.college_name || 'College not available'} type="info" />
         </Card>
 
         <Card>

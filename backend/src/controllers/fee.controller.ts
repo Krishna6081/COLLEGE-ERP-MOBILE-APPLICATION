@@ -1,22 +1,40 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { FeeService } from '../services/fee.service';
 import { ApiResponse } from '../utils/api-response';
 import { AuthenticatedRequest } from '../models/types';
+import { AuthorizationError, ValidationError } from '../utils/errors';
+import { requireCollegeId } from '../utils/tenant';
 
 export class FeeController {
   static async getStudentFees(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const studentId = req.params.studentId || req.user?.id;
-      const fees = await FeeService.getStudentFees(studentId!);
+      const user = req.user!;
+      let fees;
+      if (user.user_type === 'STUDENT') {
+        if (!user.permissions.includes('fees.self.view')) throw new AuthorizationError();
+        fees = await FeeService.getStudentFeesForUser(user.id, requireCollegeId(user.college_id));
+      } else if (user.user_type === 'PARENT') {
+        if (!user.permissions.includes('fees.self.view')) throw new AuthorizationError();
+        fees = await FeeService.getStudentFeesForParent(user.id, requireCollegeId(user.college_id), req.params.studentId);
+      } else {
+        const isSuperAdmin = user.user_type === 'SUPER_ADMIN' || user.roles.includes('SUPER_ADMIN');
+        if (!isSuperAdmin && !user.permissions.includes('fees.view')) throw new AuthorizationError();
+        if (!isSuperAdmin && !user.college_id) throw new AuthorizationError('College scope is required');
+        if (!req.params.studentId) throw new ValidationError('Student ID is required for this role');
+        fees = await FeeService.getStudentFees(req.params.studentId, isSuperAdmin ? undefined : user.college_id!);
+      }
       return ApiResponse.success(res, 'Student fees fetched', fees);
     } catch (error) {
       next(error);
     }
   }
 
-  static async recordPayment(req: Request, res: Response, next: NextFunction) {
+  static async recordPayment(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const receipt = await FeeService.recordPayment(req.body);
+      const user = req.user!;
+      const isSuperAdmin = user.user_type === 'SUPER_ADMIN' || user.roles.includes('SUPER_ADMIN');
+      if (!isSuperAdmin && !user.college_id) throw new AuthorizationError('College scope is required');
+      const receipt = await FeeService.recordPayment(req.body, isSuperAdmin ? undefined : user.college_id!);
       return ApiResponse.success(res, 'Payment recorded', receipt, 201);
     } catch (error) {
       next(error);

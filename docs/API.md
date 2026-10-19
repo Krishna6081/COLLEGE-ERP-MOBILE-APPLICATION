@@ -1,108 +1,58 @@
-# College ERP REST API Specification
+# College ERP API Reference
 
-Base Endpoint: `/api/v1`
+Base path: `/api/v1`. This inventory follows the routers mounted in `backend/src/routes/index.ts`. Every protected endpoint requires a bearer access token. Endpoints marked as pending return an error until their external provider or aggregation is configured. Query parameters and write behavior vary by route; pagination is not universal.
 
-## Authentication API (`/auth`)
-- `POST /auth/login`: Authenticate via Email / Username / Mobile Number + Password
-- `POST /auth/otp/send`: Dispatch 6-digit OTP to mobile or email for login or password reset
-- `POST /auth/otp/verify`: Verify OTP and login user with JWT tokens
-- `POST /auth/google`: Google OAuth / social authentication
-- `POST /auth/refresh-token`: Exchange refresh token for a new access token
-- `GET  /auth/me`: Get current authenticated user details with roles & permissions
-- `POST /auth/logout`: Revoke active refresh token and invalidate session
-- `POST /auth/forgot-password`: Request password reset token and OTP
-- `POST /auth/reset-password`: Reset password using token or OTP (hashes password with bcrypt)
-- `POST /auth/change-password`: Change authenticated user password (verifies current password)
-- `PATCH /auth/users/:id/status`: Activate, deactivate, or block user account (Role: `SUPER_ADMIN` or `COLLEGE_ADMIN`)
+## Authentication (`/auth`)
 
-## Super Administrator API (`/superadmin`) — RBAC: `SUPER_ADMIN`
-- **Colleges**:
-  - `GET /superadmin/colleges` - List colleges (filterable with pagination)
-  - `POST /superadmin/colleges` - Register new college
-  - `GET /superadmin/colleges/:id` - Fetch college detail & stats
-  - `PUT /superadmin/colleges/:id` - Update college information
-  - `DELETE /superadmin/colleges/:id` - Deactivate college
-- **Administrators**:
-  - `GET /superadmin/administrators` - List college administrators
-  - `POST /superadmin/administrators` - Provision new college administrator
-- **Roles & Permissions**:
-  - `GET /superadmin/roles` - List system & custom roles
-  - `POST /superadmin/roles` - Create custom role
-  - `DELETE /superadmin/roles/:id` - Remove custom role
-  - `GET /superadmin/permissions` - List all system permissions
-  - `GET /superadmin/roles/:roleId/permissions` - Get role permissions
-  - `PUT /superadmin/roles/:roleId/permissions` - Update role permissions
-- **System Settings**:
-  - `GET /superadmin/settings` - Fetch grouped system settings
-  - `PUT /superadmin/settings` - Batch update system configuration
-- **Reports**:
-  - `GET /superadmin/reports/summary` - Aggregate system KPIs & college breakdown
-  - `GET /superadmin/reports/admissions` - Admissions quota & department occupancy
-  - `GET /superadmin/reports/fees` - Financial summary & payment mode statistics
-  - `GET /superadmin/reports/attendance` - System attendance health
-  - `GET /superadmin/reports/performance` - Result pass % & top rankers
-- **Audit Logs**:
-  - `GET /superadmin/audit-logs` - Filterable audit trail by module & date
-- **Academic Configuration**:
-  - `GET /superadmin/academic-years` - List academic sessions
-  - `POST /superadmin/academic-years` - Create academic session
-  - `PATCH /superadmin/academic-years/:id/current` - Set active session
-  - `GET /superadmin/departments` - List departments
-  - `POST /superadmin/departments` - Create department
-  - `GET /superadmin/programs` - List degree programs
-  - `POST /superadmin/programs` - Create program
+- `POST /auth/login` — username, email, or mobile plus password.
+- `POST /auth/otp/send`, `POST /auth/otp/verify` — routes exist; OTP delivery is unavailable until a delivery provider is configured.
+- `POST /auth/google` — route exists; token verification is unavailable until an audience and verifier are configured.
+- `POST /auth/refresh-token` — exchanges a persisted active refresh token.
+- `GET /auth/me`, `POST /auth/logout`, `POST /auth/change-password` — authenticated session operations.
+- `POST /auth/forgot-password`, `POST /auth/reset-password` — routes exist; reset delivery is unavailable until a provider is configured.
+- `PATCH /auth/users/:id/status` — SUPER_ADMIN or COLLEGE_ADMIN.
 
-## Modules Endpoints
-All endpoints support pagination query parameters (`?page=1&limit=20&search=keyword`) and standard JSON response.
+## Super Admin (`/superadmin`)
 
-### Students (`/students`)
-- `GET /students` - List all students (Filterable by department, course, division)
-- `POST /students` - Register new student
-- `GET /students/:id` - Fetch student detail by ID
-- `PUT /students/:id` - Update student profile
-- `DELETE /students/:id` - Soft delete/deactivate student
+All routes require the SUPER_ADMIN role.
 
-### Faculty (`/faculty`)
-- `GET /faculty` - List faculty members
-- `POST /faculty` - Add new faculty member
-- `GET /faculty/:id` - Faculty profile detail
-- `PUT /faculty/:id` - Update faculty profile
-- `DELETE /faculty/:id` - Deactivate faculty
+- Colleges: `GET/POST /colleges`, `GET/PUT/DELETE /colleges/:id`.
+- Administrators: `GET/POST /administrators`.
+- Roles: `GET/POST /roles`, `PUT/DELETE /roles/:id`.
+- Permissions: `GET /permissions`, `GET/PUT /roles/:roleId/permissions`.
+- Settings: `GET/PUT /settings` (the selected `college_id` is required for tenant settings).
+- Reports: `GET /reports/summary`, `/reports/admissions`, `/reports/fees`, `/reports/attendance`, `/reports/performance`. Routes exist; executive aggregation endpoints currently return unavailable until implemented.
+- Audit: `GET /audit-logs`.
+- Academic configuration: `GET/POST /academic-years`, `PATCH /academic-years/:id/current`, `GET/POST /semesters`, `GET/POST /departments`, `GET/POST /programs`.
 
-### Attendance (`/attendance`)
-- `GET /attendance` - Fetch attendance records
-- `POST /attendance` - Submit class attendance (Bulk present/absent array)
-- `GET /attendance/student/:studentId` - Fetch student attendance percentage summary
+## Academic and student services
 
-### Timetable (`/timetable`)
-- `GET /timetable` - Fetch timetables (Filter by student, faculty, division)
-- `POST /timetable` - Create timetable entry with conflict checking
+- Students: `GET /students`, `POST /students`, `GET /students/:id`, `GET /students/class/:divisionId/roster`. Student update and delete routes are not mounted.
+- Faculty: `GET /faculty`, `GET /faculty/:id`. Faculty create, update, and delete routes are not mounted.
+- Attendance: `POST /attendance`, `GET /attendance/student/:studentId?` (the caller identity is used for self-scoped results).
+- Timetable: `GET /timetable`, `POST /timetable`.
+- Assignments: `GET /assignments`, `GET /assignments/:id`, `POST /assignments`, `PATCH /assignments/:id`, `DELETE /assignments/:id`.
+- Submissions: `GET /assignments/:id/submissions`, `POST /assignments/:id/submit`, `PATCH /assignments/submissions/:submissionId/grade`.
+- Study materials: `GET/POST /assignments/materials`. The upload route accepts a file URL; a mobile upload/storage flow is not configured.
+- Exams: `GET /exams`, `GET /exams/:id`, `POST /exams`, `PATCH /exams/:id/status`, `GET /exams/:examId/schedules`, `POST /exams/:examId/schedules`.
+- Marks and results: `GET/POST /exams/schedules/:scheduleId/marks`, `GET /exams/results/all`, `GET /exams/results/student/:studentId?`, `POST /exams/:examId/compile`, `POST /exams/:examId/publish`. There is no separate `/results` router.
 
-### Assignments (`/assignments`)
-- `GET /assignments` - List assignments
-- `POST /assignments` - Create assignment
-- `POST /assignments/:id/submit` - Submit student assignment file
-- `POST /assignments/submission/:id/grade` - Grade assignment submission
+## Fees, library, and placement
 
-### Exams & Results (`/exams`, `/results`)
-- `GET /exams` - List scheduled exams
-- `GET /results/student/:studentId` - Fetch student semester marksheets
-- `POST /results/marks` - Enter subject exam marks
-- `POST /results/publish` - Publish semester results
+- Fees: `GET /fees/student/:studentId?`, `POST /fees/pay`.
+- Library: `GET /library/books`, `GET /library/books/:id`, `GET /library/categories`, `GET /library/my-history`, `POST /library/books`, `PATCH /library/books/:id`, `POST /library/categories`, `POST /library/issue`, `POST /library/return/:issueId`, `GET /library/issued`, `GET /library/overdue`, `GET /library/report`.
+- Placement: `GET/POST /placements/companies`, `PATCH /placements/companies/:id`, `GET /placements/drives`, `GET /placements/drives/:id`, `POST /placements/drives`, `PATCH /placements/drives/:id`, `GET /placements/drives/:driveId/applications`, `PATCH /placements/applications/:applicationId`, `POST /placements/apply`, `GET /placements/my-applications`, `GET /placements/report`, `GET/POST /placements/internships`.
 
-### Fees (`/fees`)
-- `GET /fees/student/:studentId` - Student fee summary & pending balance
-- `POST /fees/pay` - Record payment & generate receipt number
+## Communication and support
 
-### Library (`/library`)
-- `GET /library/books` - Search catalog books
-- `POST /library/issue` - Issue book to student/faculty
-- `POST /library/return` - Process book return & calculate overdue fine
+- Notices: `GET /notices`, `GET /notices/:id`, `POST /notices`, `PATCH /notices/:id`, `DELETE /notices/:id`.
+- Events: `GET /notices/events/all`, `POST /notices/events`. The event endpoints are mounted under `/notices`; there is no `/events` router.
+- Notifications: `GET /notices/notifications/me`, `PATCH /notices/notifications/:id/read`, `POST /notices/notifications/read-all`.
+- Leave: `GET /leaves/types`, `GET /leaves`, `GET /leaves/:id`, `POST /leaves`, `PATCH /leaves/:id/approve`, `PATCH /leaves/:id/reject`, `DELETE /leaves/:id`.
+- Complaints: `GET/POST /complaints`, `PATCH /complaints/:id/status` (requires `complaints.manage`; scoped to the selected college).
+- Certificates: `GET/POST /certificates`, `PATCH /certificates/:id`.
+- Dashboard and health: `GET /dashboard`, `GET /health`.
 
-### Placements (`/placements`)
-- `GET /placements/drives` - Placement drives listing & eligibility
-- `POST /placements/apply` - Apply for job placement drive
+## Authorization notes
 
-### Notices & Events (`/notices`, `/events`)
-- `GET /notices` - Fetch targeted notices
-- `GET /events` - List college events & hackathons
+Permission checks are attached per route, and some controllers/services add user, department, class, or college scopes. See [ERP_ROLE_PERMISSION_AUDIT.md](ERP_ROLE_PERMISSION_AUDIT.md) for gaps. The API reference does not imply that every listed endpoint has complete CRUD, upload support, database integration coverage, or SRS approval.

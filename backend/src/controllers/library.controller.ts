@@ -1,52 +1,106 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { ApiResponse } from '../utils/api-response';
+import { AuthenticatedRequest } from '../models/types';
+import { LibraryService } from '../services/library.service';
+import { requireCollegeId } from '../utils/tenant';
 
 export class LibraryController {
-  static async getBooks(req: Request, res: Response, next: NextFunction) {
+  static async getBooks(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const books = [
-        {
-          id: 'book-001',
-          title: 'Database System Concepts',
-          author: 'Silberschatz, Korth, Sudarshan',
-          ISBN: '9780073523323',
-          publisher: 'McGraw-Hill',
-          category_name: 'Computer Science',
-          total_copies: 10,
-          available_copies: 8,
-          shelf_location: 'Rack B-4',
-        },
-        {
-          id: 'book-002',
-          title: 'Clean Code: A Handbook of Agile Software Craftsmanship',
-          author: 'Robert C. Martin',
-          ISBN: '9780132350884',
-          publisher: 'Prentice Hall',
-          category_name: 'Software Engineering',
-          total_copies: 6,
-          available_copies: 4,
-          shelf_location: 'Rack A-2',
-        },
-      ];
-      return ApiResponse.success(res, 'Books catalog fetched', books);
-    } catch (error) {
-      next(error);
-    }
+      const { page, limit, search, category_id } = req.query as any;
+      const college_id = requireCollegeId(req.user?.college_id);
+      const data = await LibraryService.getBooks({ page: +page || 1, limit: +limit || 20, search, category_id, college_id });
+      return ApiResponse.paginated(res, 'Books catalog fetched', data.books, data.pagination);
+    } catch (error) { next(error); }
   }
 
-  static async issueBook(req: Request, res: Response, next: NextFunction) {
+  static async getBookById(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const issueRecord = {
-        id: `issue-${Date.now()}`,
-        book_id: req.body.book_id,
-        user_id: req.body.user_id,
-        issue_date: new Date(),
-        due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-        status: 'ISSUED',
-      };
-      return ApiResponse.success(res, 'Book issued successfully', issueRecord, 201);
-    } catch (error) {
-      next(error);
-    }
+      const college_id = requireCollegeId(req.user?.college_id);
+      const book = await LibraryService.getBookById(req.params.id, college_id);
+      return ApiResponse.success(res, 'Book details fetched', book);
+    } catch (error) { next(error); }
+  }
+
+  static async createBook(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const college_id = requireCollegeId(req.user?.college_id);
+      const book = await LibraryService.createBook({ ...req.body, college_id });
+      return ApiResponse.created(res, 'Book added to library', book);
+    } catch (error) { next(error); }
+  }
+
+  static async updateBook(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const college_id = requireCollegeId(req.user?.college_id);
+      const book = await LibraryService.updateBook(req.params.id, req.body, college_id);
+      return ApiResponse.success(res, 'Book updated', book);
+    } catch (error) { next(error); }
+  }
+
+  static async getCategories(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const college_id = requireCollegeId(req.user?.college_id);
+      const categories = await LibraryService.getCategories(college_id);
+      return ApiResponse.success(res, 'Library categories fetched', categories);
+    } catch (error) { next(error); }
+  }
+
+  static async createCategory(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const college_id = requireCollegeId(req.user?.college_id);
+      const category = await LibraryService.createCategory({ ...req.body, college_id });
+      return ApiResponse.created(res, 'Category created', category);
+    } catch (error) { next(error); }
+  }
+
+  static async issueBook(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const college_id = requireCollegeId(req.user?.college_id);
+      const result = await LibraryService.issueBook({ college_id, book_id: req.body.book_id, user_id: req.body.user_id, due_days: req.body.due_days });
+      return ApiResponse.created(res, 'Book issued successfully', result);
+    } catch (error) { next(error); }
+  }
+
+  static async returnBook(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const college_id = requireCollegeId(req.user?.college_id);
+      const result = await LibraryService.returnBook(req.params.issueId, college_id);
+      return ApiResponse.success(res, 'Book returned', result);
+    } catch (error) { next(error); }
+  }
+
+  static async getIssuedBooks(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { page, limit, status, search, user_id } = req.query as any;
+      const college_id = requireCollegeId(req.user?.college_id);
+      const data = await LibraryService.getIssuedBooks({ page: +page || 1, limit: +limit || 20, status, search, user_id, college_id });
+      return ApiResponse.success(res, 'Issued books fetched', data);
+    } catch (error) { next(error); }
+  }
+
+  static async getMyBorrowHistory(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.id;
+      const college_id = requireCollegeId(req.user?.college_id);
+      const history = await LibraryService.getUserBorrowingHistory(userId, college_id);
+      return ApiResponse.success(res, 'Borrowing history fetched', history);
+    } catch (error) { next(error); }
+  }
+
+  static async getOverdueBooks(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const college_id = requireCollegeId(req.user?.college_id);
+      const overdueBooks = await LibraryService.getOverdueBooks(college_id);
+      return ApiResponse.success(res, 'Overdue books fetched', overdueBooks);
+    } catch (error) { next(error); }
+  }
+
+  static async getLibraryReport(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const college_id = requireCollegeId(req.user?.college_id);
+      const report = await LibraryService.getLibraryReport(college_id);
+      return ApiResponse.success(res, 'Library report fetched', report);
+    } catch (error) { next(error); }
   }
 }

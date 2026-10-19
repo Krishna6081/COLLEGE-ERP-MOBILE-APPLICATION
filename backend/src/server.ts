@@ -9,7 +9,7 @@ async function bootstrap() {
     const { ensureAuthTables } = await import('./database/init-auth-tables');
     await ensureAuthTables();
   } else {
-    logger.info('Running backend in resilient mode with mock data fallbacks enabled.');
+    logger.info('Database unavailable; database-backed requests will report errors until the database reconnects.');
   }
 
   const server = app.listen(env.PORT, '0.0.0.0', () => {
@@ -18,7 +18,7 @@ async function bootstrap() {
     logger.info(`  Port        : ${env.PORT}                     `);
     logger.info(`  Environment : ${env.NODE_ENV}                 `);
     logger.info(`  Local API   : http://localhost:${env.PORT}/api/v1 `);
-    logger.info(`  Hotspot/LAN : http://10.98.161.149:${env.PORT}/api/v1 `);
+    logger.info('  Device API  : Expo host metadata is used in development; set EXPO_PUBLIC_API_URL if needed.');
     logger.info(`=================================================`);
   });
 

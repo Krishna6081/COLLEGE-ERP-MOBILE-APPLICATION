@@ -20,6 +20,7 @@ import { SuperAdminApi, College } from '../../api/superadmin.api';
 export const CollegesManagementScreen: React.FC = () => {
   const [colleges, setColleges] = useState<College[]>([]);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [search, setSearch] = useState('');
 
   // Add College Modal
@@ -34,12 +35,18 @@ export const CollegesManagementScreen: React.FC = () => {
 
   const fetchColleges = async () => {
     setLoading(true);
+    setErrorMessage('');
     try {
       const res = await SuperAdminApi.getColleges(1, 50, search);
-      if (res.success && res.data) {
-        setColleges(res.data.colleges);
+      if (!res.success || !res.data) {
+        setColleges([]);
+        setErrorMessage(res.message || 'Could not load colleges. Try again.');
+        return;
       }
-    } catch (e) {
+      setColleges(res.data.colleges);
+    } catch (error: any) {
+      setColleges([]);
+      setErrorMessage(error?.message || 'Could not load colleges. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -90,13 +97,17 @@ export const CollegesManagementScreen: React.FC = () => {
           style: isActivating ? 'default' : 'destructive',
           onPress: async () => {
             try {
+              let response: { success: boolean; message: string };
               if (isActivating) {
-                await SuperAdminApi.updateCollege(college.id, { status: 'ACTIVE' });
+                response = await SuperAdminApi.updateCollege(college.id, { status: 'ACTIVE' });
               } else {
-                await SuperAdminApi.deleteCollege(college.id);
+                response = await SuperAdminApi.deleteCollege(college.id);
               }
-              fetchColleges();
-            } catch (e) {}
+              if (!response.success) throw new Error(response.message || 'Could not update college status.');
+              await fetchColleges();
+            } catch (error: any) {
+              Alert.alert('Error', error?.message || 'Could not update college status. Please try again.');
+            }
           },
         },
       ]
@@ -125,9 +136,17 @@ export const CollegesManagementScreen: React.FC = () => {
 
       {/* Colleges List */}
       <ScrollView contentContainerStyle={styles.scroll}>
+        {errorMessage ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{errorMessage}</Text>
+            <TouchableOpacity accessibilityRole="button" onPress={() => void fetchColleges()}>
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
         {loading ? (
           <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
-        ) : colleges.length === 0 ? (
+        ) : errorMessage ? null : colleges.length === 0 ? (
           <Text style={styles.emptyText}>No colleges found matching search criteria.</Text>
         ) : (
           colleges.map((c) => (
@@ -195,7 +214,7 @@ export const CollegesManagementScreen: React.FC = () => {
                 style={styles.input}
                 value={code}
                 onChangeText={setCode}
-                placeholder="e.g. MIT-PHARM"
+                placeholder="e.g. COLLEGE-CODE"
                 autoCapitalize="characters"
               />
 
@@ -278,6 +297,9 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   scroll: { paddingHorizontal: 16, paddingBottom: 24 },
+  errorBox: { backgroundColor: '#FEF2F2', borderRadius: 12, marginBottom: 16, padding: 16 },
+  errorText: { color: Colors.danger, fontSize: 14, lineHeight: 20 },
+  retryText: { color: Colors.primary, fontWeight: '700', marginTop: 10 },
   card: { padding: 16, marginBottom: 12 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
   collegeName: { fontSize: 16, fontWeight: '800', color: Colors.textPrimary },

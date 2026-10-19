@@ -1,79 +1,115 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Header } from '../../components/Header';
 import { Card } from '../../components/Card';
 import { Badge } from '../../components/Badge';
 import { Colors } from '../../constants/colors';
 import { ErpApi } from '../../api/erp.api';
+import { useAuthStore } from '../../store/useAuthStore';
 
-export const StudentListScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+export const StudentListScreen: React.FC<{ navigation: any; route?: any }> = ({ navigation, route }) => {
+  const user = useAuthStore((state) => state.user);
+  const isFaculty = user?.user_type === 'FACULTY';
+  const divisionId = route?.params?.divisionId as string | undefined;
+  const batchId = route?.params?.batchId as string | undefined;
   const [students, setStudents] = useState<any[]>([]);
+  const [roster, setRoster] = useState<any[]>([]);
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
-    loadStudents();
-  }, []);
+    loadStudents('');
+  }, [isFaculty, divisionId, batchId]);
 
-  const loadStudents = async () => {
+  const loadStudents = async (query = search) => {
+    setLoading(true);
+    setLoadError('');
     try {
-      const res = await ErpApi.getStudents({ search });
-      if (res.data) setStudents(res.data);
-    } catch {
-      setStudents([
-        {
-          id: 'stud-001',
-          first_name: 'Alex',
-          last_name: 'Johnson',
-          admission_number: 'ADM-2023-001',
-          PRN: 'PRN20230001',
-          department_name: 'Computer Science',
-          status: 'ACTIVE',
-        },
-        {
-          id: 'stud-002',
-          first_name: 'Emma',
-          last_name: 'Watson',
-          admission_number: 'ADM-2023-002',
-          PRN: 'PRN20230002',
-          department_name: 'Computer Science',
-          status: 'ACTIVE',
-        },
-      ]);
+      if (isFaculty) {
+        if (!divisionId) throw new Error('Open the roster from one of your scheduled classes.');
+        const res = await ErpApi.getClassRoster(divisionId, batchId);
+        const rows = Array.isArray(res?.data) ? res.data : [];
+        setRoster(rows);
+        const term = query.trim().toLowerCase();
+        setStudents(term ? rows.filter((student: any) =>
+          `${student.first_name} ${student.last_name} ${student.PRN}`.toLowerCase().includes(term)
+        ) : rows);
+        return;
+      }
+
+      const res = await ErpApi.getStudents({ search: query });
+      const items = (res as any)?.data?.students ?? (res as any)?.data ?? [];
+      setStudents(Array.isArray(items) ? items : []);
+    } catch (error: any) {
+      setLoadError(error?.message || 'Could not load students. Check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    if (isFaculty) {
+      const term = value.trim().toLowerCase();
+      setStudents(term ? roster.filter((student) =>
+        `${student.first_name} ${student.last_name} ${student.PRN}`.toLowerCase().includes(term)
+      ) : roster);
+    } else {
+      loadStudents(value);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Header title="Student Directory" subtitle="Manage & View Enrolled Students" />
+      <Header
+        title={isFaculty ? 'Assigned Class Roster' : 'Student Directory'}
+        subtitle={isFaculty ? 'Students in your assigned class' : 'Students in your authorized scope'}
+      />
       <View style={styles.searchBox}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search by name, ADM, PRN..."
+          placeholder={isFaculty ? 'Search by name or PRN...' : 'Search by name, ADM, PRN...'}
           value={search}
-          onChangeText={(txt) => {
-            setSearch(txt);
-            loadStudents();
-          }}
+          onChangeText={handleSearchChange}
         />
       </View>
-      <FlatList
+      {loading ? <ActivityIndicator style={{ flex: 1 }} color={Colors.primary} size="large" /> : loadError ? (
+        <Card style={styles.errorCard}>
+          <Text style={styles.errorText}>{loadError}</Text>
+          {divisionId ? <Button title="RETRY" onPress={() => loadStudents()} /> : null}
+          {!divisionId && isFaculty ? <Button title="BACK TO SCHEDULE" variant="outline" onPress={() => navigation.goBack()} /> : null}
+        </Card>
+      ) : <FlatList
         data={students}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
+        ListEmptyComponent={<Text style={styles.empty}>No students found</Text>}
         renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => navigation.navigate('StudentDetail', { id: item.id })}>
+          isFaculty ? (
             <Card>
               <View style={styles.row}>
                 <View>
                   <Text style={styles.name}>{item.first_name} {item.last_name}</Text>
-                  <Text style={styles.sub}>ADM: {item.admission_number} | PRN: {item.PRN}</Text>
-                  <Text style={styles.dept}>{item.department_name}</Text>
+                  <Text style={styles.sub}>PRN: {item.PRN}</Text>
                 </View>
-                <Badge label={item.status} type="success" />
               </View>
             </Card>
-          </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={() => navigation.navigate('StudentDetail', { id: item.id })}>
+              <Card>
+                <View style={styles.row}>
+                  <View>
+                    <Text style={styles.name}>{item.first_name} {item.last_name}</Text>
+                    <Text style={styles.sub}>ADM: {item.admission_number} | PRN: {item.PRN}</Text>
+                    <Text style={styles.dept}>{item.department_name}</Text>
+                  </View>
+                  <Badge label={item.status} type="success" />
+                </View>
+              </Card>
+            </TouchableOpacity>
+          )
         )}
-      />
+      />}
     </View>
   );
 };
@@ -86,4 +122,7 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
   sub: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
   dept: { fontSize: 13, color: Colors.primary, marginTop: 4, fontWeight: '500' },
+  empty: { padding: 24, color: Colors.textSecondary, textAlign: 'center' },
+  errorCard: { margin: 16 },
+  errorText: { color: Colors.danger, textAlign: 'center', marginBottom: 8 },
 });

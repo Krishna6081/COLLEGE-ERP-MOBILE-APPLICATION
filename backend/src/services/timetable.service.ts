@@ -1,110 +1,193 @@
 import { pool } from '../config/database';
 import { RowDataPacket } from 'mysql2';
-import { ConflictError } from '../utils/errors';
+import { ConflictError, NotFoundError, ValidationError } from '../utils/errors';
+import { requireCollegeId } from '../utils/tenant';
 import { v4 as uuidv4 } from 'uuid';
 
+const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+
 export class TimetableService {
-  static async getTimetable(params: { faculty_id?: string; division_id?: string; day_of_week?: string }) {
-    try {
-      let query = `
-        SELECT t.*, s.name as subject_name, s.code as subject_code, 
-               f.first_name as faculty_first_name, f.last_name as faculty_last_name,
-               c.room_number, c.building_name, d.name as division_name
-        FROM timetables t
-        LEFT JOIN subjects s ON t.subject_id = s.id
-        LEFT JOIN faculty f ON t.faculty_id = f.id
-        LEFT JOIN classrooms c ON t.classroom_id = c.id
-        LEFT JOIN divisions d ON t.division_id = d.id
-        WHERE t.status = 'ACTIVE'
-      `;
-      const queryParams: any[] = [];
-
-      if (params.faculty_id) {
-        query += ` AND t.faculty_id = ?`;
-        queryParams.push(params.faculty_id);
-      }
-      if (params.division_id) {
-        query += ` AND t.division_id = ?`;
-        queryParams.push(params.division_id);
-      }
-      if (params.day_of_week) {
-        query += ` AND t.day_of_week = ?`;
-        queryParams.push(params.day_of_week);
-      }
-
-      query += ` ORDER BY FIELD(t.day_of_week, 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'), t.start_time`;
-
-      const [rows] = await pool.query<RowDataPacket[]>(query, queryParams);
-      return rows;
-    } catch (error) {
-      return [
-        {
-          id: 'tt-001',
-          day_of_week: 'MONDAY',
-          start_time: '09:00:00',
-          end_time: '10:00:00',
-          subject_name: 'Database Management Systems',
-          subject_code: 'CS501',
-          faculty_first_name: 'John',
-          faculty_last_name: 'Smith',
-          room_number: 'LH-101',
-          building_name: 'Main Academic Block',
-          division_name: 'Division A',
-        },
-        {
-          id: 'tt-002',
-          day_of_week: 'MONDAY',
-          start_time: '10:00:00',
-          end_time: '11:00:00',
-          subject_name: 'Web Application Engineering',
-          subject_code: 'CS502',
-          faculty_first_name: 'Sarah',
-          faculty_last_name: 'Connor',
-          room_number: 'LH-101',
-          building_name: 'Main Academic Block',
-          division_name: 'Division A',
-        },
-      ];
+  static async getTimetable(params: {
+    college_id?: string | null;
+    faculty_id?: string;
+    division_id?: string;
+    batch_id?: string;
+    day_of_week?: string;
+    faculty_user_id?: string;
+    student_user_id?: string;
+    parent_user_id?: string;
+    hod_user_id?: string;
+  }) {
+    const college_id = requireCollegeId(params.college_id);
+    if (params.day_of_week && !DAYS.includes(params.day_of_week)) {
+      throw new ValidationError('Day of week is invalid');
     }
+
+    let query = `
+      SELECT DISTINCT t.*, s.name as subject_name, s.code as subject_code,
+             f.first_name as faculty_first_name, f.last_name as faculty_last_name,
+             c.room_number, c.building_name, d.name as division_name
+      FROM timetables t
+      LEFT JOIN subjects s ON t.subject_id = s.id
+      LEFT JOIN faculty f ON t.faculty_id = f.id
+      LEFT JOIN classrooms c ON t.classroom_id = c.id
+      LEFT JOIN divisions d ON t.division_id = d.id
+      WHERE t.status = 'ACTIVE' AND t.college_id = ?
+    `;
+    const queryParams: any[] = [college_id];
+
+    if (params.faculty_id) {
+      query += ` AND t.faculty_id = ?`;
+      queryParams.push(params.faculty_id);
+    }
+    if (params.division_id) {
+      query += ` AND t.division_id = ?`;
+      queryParams.push(params.division_id);
+    }
+    if (params.batch_id) {
+      query += ` AND t.batch_id = ?`;
+      queryParams.push(params.batch_id);
+    }
+    if (params.day_of_week) {
+      query += ` AND t.day_of_week = ?`;
+      queryParams.push(params.day_of_week);
+    }
+    if (params.faculty_user_id) {
+      query += ` AND EXISTS (
+        SELECT 1 FROM faculty own_faculty
+        WHERE own_faculty.id = t.faculty_id AND own_faculty.user_id = ?
+          AND own_faculty.college_id = t.college_id AND own_faculty.status = 'ACTIVE'
+      )`;
+      queryParams.push(params.faculty_user_id);
+    }
+    if (params.student_user_id) {
+      query += ` AND EXISTS (
+        SELECT 1 FROM students own_student
+        WHERE own_student.user_id = ? AND own_student.college_id = t.college_id
+          AND own_student.division_id = t.division_id AND own_student.status = 'ACTIVE'
+          AND (t.batch_id IS NULL OR t.batch_id = own_student.batch_id)
+      )`;
+      queryParams.push(params.student_user_id);
+    }
+    if (params.parent_user_id) {
+      query += ` AND EXISTS (
+        SELECT 1 FROM student_parents sp
+        JOIN parents parent ON parent.id = sp.parent_id
+        JOIN students linked_student ON linked_student.id = sp.student_id
+        WHERE parent.user_id = ? AND parent.college_id = t.college_id
+          AND linked_student.college_id = t.college_id
+          AND linked_student.division_id = t.division_id AND linked_student.status = 'ACTIVE'
+          AND (t.batch_id IS NULL OR t.batch_id = linked_student.batch_id)
+      )`;
+      queryParams.push(params.parent_user_id);
+    }
+    if (params.hod_user_id) {
+      query += ` AND EXISTS (
+        SELECT 1 FROM faculty hod
+        WHERE hod.user_id = ? AND hod.college_id = t.college_id
+          AND hod.department_id = s.department_id AND hod.status = 'ACTIVE'
+      )`;
+      queryParams.push(params.hod_user_id);
+    }
+
+    query += ` ORDER BY FIELD(t.day_of_week, 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'), t.start_time`;
+
+    const [rows] = await pool.query<RowDataPacket[]>(query, queryParams);
+    return rows;
   }
 
-  static async createTimetable(data: any) {
-    const id = uuidv4();
-    try {
-      // Conflict check
-      const [conflicts] = await pool.query<RowDataPacket[]>(
-        `SELECT * FROM timetables 
-         WHERE day_of_week = ? AND status = 'ACTIVE' 
-         AND ((faculty_id = ?) OR (classroom_id = ?) OR (division_id = ?))
-         AND ((start_time < ? AND end_time > ?))`,
-        [data.day_of_week, data.faculty_id, data.classroom_id, data.division_id, data.end_time, data.start_time]
-      );
+  static async createTimetable(data: any, collegeId: string) {
+    const college_id = requireCollegeId(collegeId);
+    const requiredFields = [
+      'academic_year_id', 'semester_id', 'division_id', 'subject_id',
+      'faculty_id', 'classroom_id', 'day_of_week', 'start_time', 'end_time',
+    ];
+    const missingFields = requiredFields.filter((field) => !data[field]);
+    if (missingFields.length) {
+      throw new ValidationError(`Missing required timetable fields: ${missingFields.join(', ')}`);
+    }
+    if (!DAYS.includes(data.day_of_week)) throw new ValidationError('Day of week is invalid');
 
-      if (conflicts.length > 0) {
-        throw new ConflictError('Timetable conflict: Faculty, classroom, or division is already occupied during this time block');
+    const timePattern = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
+    if (!timePattern.test(data.start_time) || !timePattern.test(data.end_time) || data.start_time >= data.end_time) {
+      throw new ValidationError('Timetable start and end times are invalid');
+    }
+
+    const id = uuidv4();
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      // Serialize concurrent schedule writes for the same faculty, room, or division.
+      const [facultyRows] = await conn.query<RowDataPacket[]>(
+        'SELECT id FROM faculty WHERE id = ? FOR UPDATE', [data.faculty_id]
+      );
+      const [classroomRows] = await conn.query<RowDataPacket[]>(
+        'SELECT id FROM classrooms WHERE id = ? FOR UPDATE', [data.classroom_id]
+      );
+      const [divisionRows] = await conn.query<RowDataPacket[]>(
+        'SELECT id FROM divisions WHERE id = ? FOR UPDATE', [data.division_id]
+      );
+      if (!facultyRows.length || !classroomRows.length || !divisionRows.length) {
+        throw new ValidationError('Faculty, classroom, and division must exist');
       }
 
-      await pool.query(
-        `INSERT INTO timetables (id, college_id, academic_year_id, semester_id, division_id, subject_id, faculty_id, classroom_id, day_of_week, start_time, end_time)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      const [validRelationships] = await conn.query<RowDataPacket[]>(
+        `SELECT ay.id
+         FROM academic_years ay
+         JOIN semesters sem ON sem.id = ? AND sem.academic_year_id = ay.id AND sem.status = 'ACTIVE'
+         JOIN divisions d ON d.id = ? AND d.semester_id = sem.id AND d.status = 'ACTIVE'
+         JOIN courses c ON c.id = d.course_id AND c.status = 'ACTIVE'
+         JOIN programs p ON p.id = c.program_id AND p.college_id = ay.college_id AND p.status = 'ACTIVE'
+         JOIN subjects s ON s.id = ? AND s.course_id = c.id AND s.department_id = p.department_id AND s.status = 'ACTIVE'
+         JOIN faculty f ON f.id = ? AND f.college_id = ay.college_id
+           AND f.department_id = s.department_id AND f.status = 'ACTIVE'
+         JOIN faculty_subjects fs ON fs.faculty_id = f.id AND fs.subject_id = s.id
+           AND fs.division_id = d.id AND fs.academic_year_id = ay.id AND fs.semester_id = sem.id
+         JOIN classrooms room ON room.id = ? AND room.college_id = ay.college_id AND room.status = 'ACTIVE'
+         LEFT JOIN batches b ON b.id = ? AND b.division_id = d.id AND b.status = 'ACTIVE'
+         WHERE ay.id = ? AND ay.college_id = ? AND ay.status = 'ACTIVE'
+           AND (? IS NULL OR b.id IS NOT NULL)`,
         [
-          id,
-          data.college_id || 'col-001',
-          data.academic_year_id || 'ay-001',
-          data.semester_id || 'sem-001',
-          data.division_id,
-          data.subject_id,
-          data.faculty_id,
-          data.classroom_id,
-          data.day_of_week,
-          data.start_time,
-          data.end_time,
+          data.semester_id, data.division_id, data.subject_id, data.faculty_id,
+          data.classroom_id, data.batch_id || null, data.academic_year_id,
+          college_id, data.batch_id || null,
         ]
       );
-      return { id, ...data };
-    } catch (error: any) {
-      if (error instanceof ConflictError) throw error;
-      return { id, ...data, message: 'Timetable entry created' };
+      if (!validRelationships.length) {
+        throw new ValidationError('Academic year, semester, division, subject, assigned faculty, classroom, and optional batch must form an active path in this college');
+      }
+
+      const [conflicts] = await conn.query<RowDataPacket[]>(
+        `SELECT id FROM timetables
+         WHERE college_id = ? AND day_of_week = ? AND status = 'ACTIVE'
+           AND (faculty_id = ? OR classroom_id = ? OR division_id = ?)
+           AND start_time < ? AND end_time > ?
+         FOR UPDATE`,
+        [college_id, data.day_of_week, data.faculty_id, data.classroom_id,
+          data.division_id, data.end_time, data.start_time]
+      );
+      if (conflicts.length) {
+        throw new ConflictError('Timetable conflict: faculty, classroom, or division is already occupied during this time block');
+      }
+
+      await conn.query(
+        `INSERT INTO timetables
+         (id, college_id, academic_year_id, semester_id, division_id, batch_id,
+          subject_id, faculty_id, classroom_id, day_of_week, start_time, end_time)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, college_id, data.academic_year_id, data.semester_id, data.division_id,
+          data.batch_id || null, data.subject_id, data.faculty_id, data.classroom_id,
+          data.day_of_week, data.start_time, data.end_time]
+      );
+
+      await conn.commit();
+      return { id, ...data, college_id, batch_id: data.batch_id || null };
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally {
+      conn.release();
     }
   }
 }

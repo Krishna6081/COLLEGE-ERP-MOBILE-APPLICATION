@@ -86,8 +86,8 @@ export const SettingsScreen: React.FC = () => {
         <Card>
           <Text style={styles.sectionHeader}>Active Session</Text>
           <Text style={styles.infoTxt}>Logged in as: <Text style={styles.bold}>{user?.username || 'User'}</Text></Text>
-          <Text style={styles.infoTxt}>Role: <Text style={styles.bold}>{user?.user_type || 'STUDENT'}</Text></Text>
-          <Text style={styles.infoTxt}>College: <Text style={styles.bold}>{user?.college_name || 'MIT Institute of Technology'}</Text></Text>
+          <Text style={styles.infoTxt}>Role: <Text style={styles.bold}>{user?.user_type || 'Role unavailable'}</Text></Text>
+          <Text style={styles.infoTxt}>College: <Text style={styles.bold}>{user?.college_name || 'College not available'}</Text></Text>
         </Card>
 
         {/* Security Settings */}
@@ -107,7 +107,7 @@ export const SettingsScreen: React.FC = () => {
         {/* Application Version */}
         <Card>
           <Text style={styles.sectionHeader}>Application Information</Text>
-          <Text style={styles.infoTxt}>Platform: College ERP Mobile v1.0.0 (Expo SDK 51)</Text>
+          <Text style={styles.infoTxt}>Platform: College ERP Mobile v1.0.0</Text>
           <Text style={styles.infoTxt}>Security: JWT Bearer + Refresh Token + RBAC</Text>
           <Text style={styles.infoTxt}>Backend: Node.js Express MySQL API</Text>
         </Card>

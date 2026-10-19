@@ -80,30 +80,24 @@ describe('Auth API Integration Tests', () => {
   });
 
   describe('5.2 Optional: OTP Login & Google Authentication', () => {
-    let generatedOtp: string;
-
-    it('POST /api/v1/auth/otp/send should dispatch 6-digit OTP', async () => {
+    it('POST /api/v1/auth/otp/send reports missing delivery configuration', async () => {
       const res = await request(app).post('/api/v1/auth/otp/send').send({
         identifier: '+919900000008',
         purpose: 'LOGIN',
       });
 
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data.debugOtp).toBeDefined();
-      generatedOtp = res.body.data.debugOtp;
+      expect(res.status).toBe(503);
+      expect(res.body.error.code).toBe('OTP_DELIVERY_UNAVAILABLE');
     });
 
-    it('POST /api/v1/auth/otp/verify with valid OTP should login user', async () => {
+    it('POST /api/v1/auth/otp/verify rejects the former universal fallback code', async () => {
       const res = await request(app).post('/api/v1/auth/otp/verify').send({
         identifier: '+919900000008',
-        otp: generatedOtp || '123456',
+        otp: '123456',
       });
 
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data.accessToken).toBeDefined();
-      expect(res.body.data.user.username).toBe('student_alex');
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
     });
 
     it('POST /api/v1/auth/otp/verify with invalid OTP should fail', async () => {
@@ -116,17 +110,15 @@ describe('Auth API Integration Tests', () => {
       expect(res.body.success).toBe(false);
     });
 
-    it('POST /api/v1/auth/google should authenticate google user', async () => {
+    it('POST /api/v1/auth/google rejects unverified client identity', async () => {
       const res = await request(app).post('/api/v1/auth/google').send({
         email: 'alex.johnson@student.mit-eng.edu',
         name: 'Alex Johnson',
         avatarUrl: 'https://example.com/avatar.jpg',
       });
 
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data.accessToken).toBeDefined();
-      expect(res.body.data.user.email).toBe('alex.johnson@student.mit-eng.edu');
+      expect(res.status).toBe(503);
+      expect(res.body.error.code).toBe('GOOGLE_SIGN_IN_UNAVAILABLE');
     });
   });
 
@@ -170,37 +162,24 @@ describe('Auth API Integration Tests', () => {
   });
 
   describe('5.2 Password Management: Forgot, Reset, and Change Password', () => {
-    let resetOtp: string;
-
-    it('POST /api/v1/auth/forgot-password should generate reset OTP/token', async () => {
+    it('POST /api/v1/auth/forgot-password reports missing delivery configuration', async () => {
       const res = await request(app).post('/api/v1/auth/forgot-password').send({
         identifier: 'alex.johnson@student.mit-eng.edu',
       });
 
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data.debugOtp).toBeDefined();
-      resetOtp = res.body.data.debugOtp;
+      expect(res.status).toBe(503);
+      expect(res.body.error.code).toBe('PASSWORD_RESET_DELIVERY_UNAVAILABLE');
     });
 
-    it('POST /api/v1/auth/reset-password with valid OTP should update password', async () => {
+    it('POST /api/v1/auth/reset-password rejects the former universal fallback code', async () => {
       const res = await request(app).post('/api/v1/auth/reset-password').send({
         identifier: 'alex.johnson@student.mit-eng.edu',
-        otp: resetOtp || '123456',
+        otp: '123456',
         newPassword: 'newPassword123',
       });
 
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.message).toContain('Password reset');
-
-      // Verify login with new password
-      const loginRes = await request(app).post('/api/v1/auth/login').send({
-        identifier: 'alex.johnson@student.mit-eng.edu',
-        password: 'newPassword123',
-      });
-      expect(loginRes.status).toBe(200);
-      studentAccessToken = loginRes.body.data.accessToken;
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
     });
 
     it('POST /api/v1/auth/change-password should change password for logged-in user', async () => {
@@ -208,8 +187,8 @@ describe('Auth API Integration Tests', () => {
         .post('/api/v1/auth/change-password')
         .set('Authorization', `Bearer ${studentAccessToken}`)
         .send({
-          currentPassword: 'newPassword123',
-          newPassword: 'password123', // Reset back to default
+          currentPassword: 'password123',
+          newPassword: 'newPassword123',
         });
 
       expect(res.status).toBe(200);
@@ -227,6 +206,16 @@ describe('Auth API Integration Tests', () => {
 
       expect(res.status).toBe(401);
       expect(res.body.success).toBe(false);
+    });
+
+    it('POST /api/v1/auth/change-password can restore the seed password after the test', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/change-password')
+        .set('Authorization', `Bearer ${studentAccessToken}`)
+        .send({ currentPassword: 'newPassword123', newPassword: 'password123' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
     });
   });
 

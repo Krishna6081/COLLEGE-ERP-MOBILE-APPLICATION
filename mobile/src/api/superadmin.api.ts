@@ -144,12 +144,12 @@ export class SuperAdminApi {
   }
 
   // 5. System Settings
-  static async getSystemSettings(): Promise<ApiResponse<SystemSetting[]>> {
-    return await apiClient.get('/superadmin/settings');
+  static async getSystemSettings(collegeId: string): Promise<ApiResponse<SystemSetting[]>> {
+    return await apiClient.get('/superadmin/settings', { params: { college_id: collegeId } });
   }
 
-  static async updateSystemSettings(settings: Array<{ key: string; value: string; group?: string }>): Promise<ApiResponse<{ message: string }>> {
-    return await apiClient.put('/superadmin/settings', { settings });
+  static async updateSystemSettings(collegeId: string, settings: Array<{ key: string; value: string; group?: string }>): Promise<ApiResponse<{ message: string }>> {
+    return await apiClient.put('/superadmin/settings', { college_id: collegeId, settings });
   }
 
   // 6. Reports
@@ -179,23 +179,23 @@ export class SuperAdminApi {
   }
 
   // 8. Academic Configuration
-  static async getAcademicYears(): Promise<ApiResponse<AcademicYear[]>> {
-    return await apiClient.get('/superadmin/academic-years');
+  static async getAcademicYears(collegeId: string): Promise<ApiResponse<AcademicYear[]>> {
+    return await apiClient.get('/superadmin/academic-years', { params: { college_id: collegeId } });
   }
 
-  static async createAcademicYear(data: { name: string; start_date: string; end_date: string; is_current?: boolean }): Promise<ApiResponse<AcademicYear>> {
+  static async createAcademicYear(data: { college_id: string; name: string; start_date: string; end_date: string; is_current?: boolean }): Promise<ApiResponse<AcademicYear>> {
     return await apiClient.post('/superadmin/academic-years', data);
   }
 
-  static async setCurrentAcademicYear(id: string): Promise<ApiResponse<any>> {
-    return await apiClient.patch(`/superadmin/academic-years/${id}/current`);
+  static async setCurrentAcademicYear(id: string, collegeId: string): Promise<ApiResponse<any>> {
+    return await apiClient.patch(`/superadmin/academic-years/${id}/current`, { college_id: collegeId });
   }
 
-  static async getDepartments(): Promise<ApiResponse<Department[]>> {
-    return await apiClient.get('/superadmin/departments');
+  static async getDepartments(collegeId: string): Promise<ApiResponse<Department[]>> {
+    return await apiClient.get('/superadmin/departments', { params: { college_id: collegeId } });
   }
 
-  static async createDepartment(data: { code: string; name: string; description?: string }): Promise<ApiResponse<Department>> {
+  static async createDepartment(data: { college_id: string; code: string; name: string; description?: string }): Promise<ApiResponse<Department>> {
     return await apiClient.post('/superadmin/departments', data);
   }
 }

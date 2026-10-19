@@ -1,6 +1,6 @@
 # College ERP Database Architecture & Schemas
 
-The application uses MySQL with 78 normalized tables.
+The schema currently defines 81 tables. It is a bootstrap script, not a migration: it drops existing tables before recreating them. Do not run it against a database containing data; use reviewed, versioned migrations for updates.
 
 ## Core Schema Groups
 

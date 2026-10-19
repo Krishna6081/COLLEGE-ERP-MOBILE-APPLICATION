@@ -21,6 +21,15 @@ export function requirePermission(permission: string) {
   };
 }
 
+export function requireAnyPermission(permissions: string[]) {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    if (!req.user) return next(new AuthorizationError('User context missing'));
+    if (req.user.user_type === 'SUPER_ADMIN' || req.user.roles.includes('SUPER_ADMIN')) return next();
+    if (permissions.some((permission) => req.user!.permissions?.includes(permission))) return next();
+    return next(new AuthorizationError(`Missing one of the required permissions: [${permissions.join(', ')}]`));
+  };
+}
+
 export function requireRole(allowedRoles: string[]) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {

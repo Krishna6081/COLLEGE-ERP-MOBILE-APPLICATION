@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { Header } from '../../components/Header';
 import { Card } from '../../components/Card';
 import { Badge } from '../../components/Badge';
@@ -8,6 +8,7 @@ import { ErpApi } from '../../api/erp.api';
 
 export const FacultyListScreen: React.FC = () => {
   const [faculty, setFaculty] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadFaculty();
@@ -16,22 +17,22 @@ export const FacultyListScreen: React.FC = () => {
   const loadFaculty = async () => {
     try {
       const res = await ErpApi.getFaculty();
-      if (res.data) setFaculty(res.data);
-    } catch {
-      setFaculty([
-        { id: 'fac-001', employee_id: 'EMP-001', first_name: 'Alan', last_name: 'Turing', qualification: 'Ph.D. CS', designation_name: 'Professor & HOD' },
-        { id: 'fac-002', employee_id: 'EMP-002', first_name: 'John', last_name: 'Smith', qualification: 'M.Tech CSE', designation_name: 'Assistant Professor' },
-        { id: 'fac-003', employee_id: 'EMP-003', first_name: 'Sarah', last_name: 'Connor', qualification: 'M.Tech AI', designation_name: 'Assistant Professor' },
-      ]);
+      const items = (res as any)?.data?.faculty ?? (res as any)?.data ?? [];
+      setFaculty(Array.isArray(items) ? items : []);
+    } catch (error: any) {
+      Alert.alert('Could not load faculty', error?.message || 'Check your connection and try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <View style={styles.container}>
       <Header title="Faculty Members" subtitle="Academic Teaching Staff Directory" />
-      <FlatList
+      {loading ? <ActivityIndicator style={{ flex: 1 }} color={Colors.primary} size="large" /> : <FlatList
         data={faculty}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
+        ListEmptyComponent={<Text style={styles.empty}>No faculty members found</Text>}
         renderItem={({ item }) => (
           <Card>
             <View style={styles.row}>
@@ -44,7 +45,7 @@ export const FacultyListScreen: React.FC = () => {
             </View>
           </Card>
         )}
-      />
+      />}
     </View>
   );
 };
@@ -55,4 +56,5 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
   desig: { fontSize: 13, color: Colors.primary, marginTop: 2, fontWeight: '500' },
   empId: { fontSize: 12, color: Colors.textSecondary, marginTop: 4 },
+  empty: { padding: 24, color: Colors.textSecondary, textAlign: 'center' },
 });

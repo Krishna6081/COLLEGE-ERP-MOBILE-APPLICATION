@@ -1,8 +1,12 @@
 import bcrypt from 'bcryptjs';
 import { pool } from '../config/database';
 import { logger } from '../utils/logger';
+import { env } from '../config/env';
 
 export async function runSeeder() {
+  if (env.NODE_ENV === 'production') {
+    throw new Error('Demo seeding is disabled in production. Provision production roles and users with the approved admin workflow.');
+  }
   logger.info('Starting College ERP Seeder...');
 
   try {
@@ -95,9 +99,10 @@ export async function runSeeder() {
     logger.info('Database seeder completed successfully.');
   } catch (error: any) {
     logger.error(`Seeder Error: ${error.message}`);
+    throw error;
   }
 }
 
 if (require.main === module) {
-  runSeeder().then(() => process.exit(0));
+  runSeeder().then(() => process.exit(0)).catch(() => process.exit(1));
 }

@@ -1,26 +1,19 @@
 import { Router } from 'express';
+import { authenticate } from '../middleware/auth.middleware';
+import { requirePermission } from '../middleware/rbac.middleware';
 import { ComplaintController } from '../controllers/complaint.controller';
 import { CertificateController } from '../controllers/certificate.controller';
-import { LibraryController } from '../controllers/library.controller';
-import { PlacementController } from '../controllers/placement.controller';
-import { authenticate } from '../middleware/auth.middleware';
 
+// ── Complaints Router ───────────────────────────────────
 export const complaintRouter = Router();
 complaintRouter.use(authenticate);
 complaintRouter.get('/', ComplaintController.getAll);
-complaintRouter.post('/', ComplaintController.create);
+complaintRouter.post('/', requirePermission('complaints.create'), ComplaintController.create);
+complaintRouter.patch('/:id/status', requirePermission('complaints.manage'), ComplaintController.updateStatus);
 
+// ── Certificates Router ─────────────────────────────────
 export const certificateRouter = Router();
 certificateRouter.use(authenticate);
 certificateRouter.get('/', CertificateController.getRequests);
-certificateRouter.post('/', CertificateController.requestCertificate);
-
-export const libraryRouter = Router();
-libraryRouter.use(authenticate);
-libraryRouter.get('/books', LibraryController.getBooks);
-libraryRouter.post('/issue', LibraryController.issueBook);
-
-export const placementRouter = Router();
-placementRouter.use(authenticate);
-placementRouter.get('/drives', PlacementController.getDrives);
-placementRouter.post('/apply', PlacementController.applyDrive);
+certificateRouter.post('/', requirePermission('certificates.request'), CertificateController.requestCertificate);
+certificateRouter.patch('/:id', requirePermission('certificates.manage'), CertificateController.updateStatus);

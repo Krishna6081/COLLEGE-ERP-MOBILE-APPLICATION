@@ -1,44 +1,38 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { Header } from '../../components/Header';
 import { Card } from '../../components/Card';
 import { StatCard } from '../../components/StatCard';
 import { Badge } from '../../components/Badge';
 import { Colors } from '../../constants/colors';
-import { ErpApi } from '../../api/erp.api';
 import { DashboardApi } from '../../api/dashboard.api';
 import { useAuthStore } from '../../store/useAuthStore';
+import { DashboardUnavailable } from '../../components/DashboardUnavailable';
 
 export const StudentDashboardScreen: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const loadData = async () => {
+    setLoading(true);
     setRefreshing(true);
     try {
       const res = await DashboardApi.getDashboardData();
       if (res.data) {
         setData(res.data);
+        setErrorMessage('');
+      } else {
+        setData(null);
+        setErrorMessage('The server returned no dashboard data. Try again.');
       }
-    } catch {
-      // Fallback data
-      setData({
-        attendance_percentage: 86.5,
-        total_lectures: 120,
-        attended_lectures: 104,
-        todays_timetable: [
-          { time: '09:00 - 10:00 AM', subject: 'Database Management Systems', room: 'LH-101', faculty: 'Prof. John Smith' },
-          { time: '10:00 - 11:00 AM', subject: 'Web Application Engineering', room: 'LH-101', faculty: 'Prof. Sarah Connor' },
-          { time: '11:30 - 01:30 PM', subject: 'DBMS Laboratory', room: 'LAB-201', faculty: 'Prof. John Smith' },
-        ],
-        upcoming_exams: [
-          { title: 'Mid-Sem CS501 DBMS', date: '2026-10-14', time: '10:00 AM' },
-          { title: 'Mid-Sem CS502 Web App', date: '2026-10-16', time: '10:00 AM' },
-        ],
-        fee_status: { total: 50000, paid: 20000, due: 25000, status: 'PARTIAL' },
-      });
+    } catch (error: any) {
+      setData(null);
+      setErrorMessage(error?.message || 'Could not load your dashboard. Check your connection and try again.');
     } finally {
+      setLoading(false);
       setRefreshing(false);
     }
   };
@@ -47,11 +41,22 @@ export const StudentDashboardScreen: React.FC = () => {
     loadData();
   }, []);
 
+  if (loading) return <ActivityIndicator style={{ flex: 1 }} color={Colors.primary} size="large" />;
+  if (!data) {
+    return (
+      <DashboardUnavailable
+        title="Student Dashboard"
+        message={errorMessage}
+        onRetry={loadData}
+      />
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Header
-        title={`Welcome, ${user?.first_name || 'Alex'}!`}
-        subtitle="B.Tech Computer Science • Sem 5"
+        title={`Welcome, ${user?.first_name || 'Student'}!`}
+        subtitle={data?.program && data?.semester ? `${data.program} • ${data.semester}` : 'Academic overview'}
         onRightPress={loadData}
       />
       <ScrollView
@@ -62,21 +67,21 @@ export const StudentDashboardScreen: React.FC = () => {
         <View style={styles.statsRow}>
           <StatCard
             title="Attendance"
-            value={`${data?.attendance_percentage || 86.5}%`}
-            subtitle="104/120 Lectures"
+            value={`${data?.attendance_percentage ?? 0}%`}
+            subtitle={`${data?.attended_lectures ?? 0}/${data?.total_lectures ?? 0} Lectures`}
             color={Colors.accent}
           />
           <StatCard
             title="Current SGPA"
-            value="9.15"
-            subtitle="Sem 4 Result"
+            value={data?.current_sgpa ?? '—'}
+            subtitle={data?.sgpa_semester || 'Latest result'}
             color={Colors.primary}
           />
         </View>
 
         {/* Today's Timetable */}
         <Text style={styles.sectionTitle}>TODAY'S SCHEDULE</Text>
-        {data?.todays_timetable?.map((item: any, idx: number) => (
+        {(data?.todays_timetable || []).map((item: any, idx: number) => (
           <Card key={idx} style={styles.scheduleCard}>
             <View style={styles.scheduleHeader}>
               <Text style={styles.timeText}>{item.time}</Text>
@@ -86,37 +91,39 @@ export const StudentDashboardScreen: React.FC = () => {
             <Text style={styles.facultyText}>{item.faculty}</Text>
           </Card>
         ))}
+        {(data?.todays_timetable || []).length === 0 && <Card><Text style={styles.facultyText}>No classes scheduled for today.</Text></Card>}
 
         {/* Fee Payment Summary */}
         <Text style={styles.sectionTitle}>FEE SUMMARY</Text>
         <Card>
           <View style={styles.feeRow}>
             <Text style={styles.feeLabel}>Total Amount:</Text>
-            <Text style={styles.feeVal}>₹{data?.fee_status?.total || 50000}</Text>
+            <Text style={styles.feeVal}>₹{data?.fee_status?.total ?? 0}</Text>
           </View>
           <View style={styles.feeRow}>
             <Text style={styles.feeLabel}>Paid Amount:</Text>
-            <Text style={[styles.feeVal, { color: Colors.accent }]}>₹{data?.fee_status?.paid || 20000}</Text>
+            <Text style={[styles.feeVal, { color: Colors.accent }]}>₹{data?.fee_status?.paid ?? 0}</Text>
           </View>
           <View style={styles.feeRow}>
             <Text style={styles.feeLabel}>Pending Dues:</Text>
-            <Text style={[styles.feeVal, { color: Colors.danger }]}>₹{data?.fee_status?.due || 25000}</Text>
+            <Text style={[styles.feeVal, { color: Colors.danger }]}>₹{data?.fee_status?.due ?? 0}</Text>
           </View>
         </Card>
 
         {/* Upcoming Exams */}
         <Text style={styles.sectionTitle}>UPCOMING EXAMINATIONS</Text>
-        {data?.upcoming_exams?.map((exam: any, idx: number) => (
+        {(data?.upcoming_exams || []).map((exam: any, idx: number) => (
           <Card key={idx}>
             <View style={styles.examRow}>
               <View>
-                <Text style={styles.examTitle}>{exam.title}</Text>
-                <Text style={styles.examDate}>{exam.date} • {exam.time}</Text>
+                <Text style={styles.examTitle}>{exam.exam_name || exam.subject_name || exam.title || 'Exam'}</Text>
+                <Text style={styles.examDate}>{exam.exam_date || exam.date} • {exam.start_time || exam.time}</Text>
               </View>
               <Badge label="Scheduled" type="warning" />
             </View>
           </Card>
         ))}
+        {(data?.upcoming_exams || []).length === 0 && <Card><Text style={styles.facultyText}>No upcoming examinations.</Text></Card>}
       </ScrollView>
     </View>
   );

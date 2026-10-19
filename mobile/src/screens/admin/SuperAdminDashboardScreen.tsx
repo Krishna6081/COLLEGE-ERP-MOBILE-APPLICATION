@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { Header } from '../../components/Header';
 import { Card } from '../../components/Card';
@@ -19,22 +20,27 @@ interface Props {
 
 export const SuperAdminDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
-  const [summary, setSummary] = useState<any>({
-    kpis: {
-      totalColleges: 3,
-      totalStudents: 4370,
-      totalFaculty: 250,
-      totalFeeCollected: '₹ 14.85 Cr',
-    },
-  });
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [summary, setSummary] = useState<any>(null);
 
   const loadData = async () => {
+    setErrorMessage('');
     try {
       const res = await SuperAdminApi.getSummaryReport();
-      if (res.success && res.data) {
-        setSummary(res.data);
+      if (!res.success || !res.data) {
+        setSummary(null);
+        setErrorMessage(res.message || 'Live system reports are unavailable.');
+        return;
       }
-    } catch (e) {}
+      setSummary(res.data);
+    } catch (error: any) {
+      setSummary(null);
+      setErrorMessage(error?.message || 'Could not load system reports. Check your connection and try again.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   };
 
   useEffect(() => {
@@ -44,7 +50,11 @@ export const SuperAdminDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const onRefresh = async () => {
     setRefreshing(true);
     await loadData();
-    setRefreshing(false);
+  };
+
+  const retryLoad = () => {
+    setLoading(true);
+    void loadData();
   };
 
   const modules = [
@@ -65,36 +75,49 @@ export const SuperAdminDashboardScreen: React.FC<Props> = ({ navigation }) => {
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* KPI Counter Cards */}
-        <View style={styles.statsRow}>
-          <StatCard
-            title="Institutions"
-            value={summary.kpis?.totalColleges?.toString() || '3'}
-            subtitle="Active Colleges"
-            color={Colors.primary}
-          />
-          <StatCard
-            title="Students"
-            value={summary.kpis?.totalStudents?.toLocaleString() || '4,370'}
-            subtitle="System Total"
-            color={Colors.secondary}
-          />
-        </View>
+        {loading ? (
+          <ActivityIndicator style={styles.reportState} color={Colors.primary} size="large" />
+        ) : summary ? (
+          <>
+            <View style={styles.statsRow}>
+              <StatCard
+                title="Institutions"
+                value={summary.kpis?.totalColleges?.toString() ?? '—'}
+                subtitle="Active Colleges"
+                color={Colors.primary}
+              />
+              <StatCard
+                title="Students"
+                value={summary.kpis?.totalStudents?.toLocaleString() ?? '—'}
+                subtitle="System Total"
+                color={Colors.secondary}
+              />
+            </View>
 
-        <View style={styles.statsRow}>
-          <StatCard
-            title="Faculty Members"
-            value={summary.kpis?.totalFaculty?.toString() || '250'}
-            subtitle="Teaching Staff"
-            color={Colors.accent}
-          />
-          <StatCard
-            title="Total Fees"
-            value={summary.kpis?.totalFeeCollected || '₹ 14.85 Cr'}
-            subtitle="YTD Collection"
-            color="#D97706"
-          />
-        </View>
+            <View style={styles.statsRow}>
+              <StatCard
+                title="Faculty Members"
+                value={summary.kpis?.totalFaculty?.toString() ?? '—'}
+                subtitle="Teaching Staff"
+                color={Colors.accent}
+              />
+              <StatCard
+                title="Total Fees"
+                value={summary.kpis?.totalFeeCollected != null ? String(summary.kpis.totalFeeCollected) : '—'}
+                subtitle="Reported total"
+                color="#D97706"
+              />
+            </View>
+          </>
+        ) : (
+          <Card style={styles.reportErrorCard}>
+            <Text style={styles.reportErrorTitle}>System reports unavailable</Text>
+            <Text style={styles.reportErrorMessage}>{errorMessage || 'Try again when the report service is available.'}</Text>
+            <TouchableOpacity accessibilityRole="button" onPress={retryLoad} style={styles.retryButton}>
+              <Text style={styles.retryButtonText}>Try again</Text>
+            </TouchableOpacity>
+          </Card>
+        )}
 
         {/* 8 Responsibilities Grid */}
         <Text style={styles.sectionHeader}>SUPER ADMINISTRATOR RESPONSIBILITIES</Text>
@@ -113,22 +136,6 @@ export const SuperAdminDashboardScreen: React.FC<Props> = ({ navigation }) => {
           ))}
         </View>
 
-        {/* System Overview Card */}
-        <Text style={styles.sectionHeader}>SYSTEM STATUS</Text>
-        <Card style={{ marginHorizontal: 16 }}>
-          <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>• Architecture:</Text>
-            <Text style={styles.statusValue}>Node.js + MySQL + RBAC</Text>
-          </View>
-          <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>• Role Hierarchy:</Text>
-            <Text style={styles.statusValue}>13 Roles Configured</Text>
-          </View>
-          <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>• Audit Trail:</Text>
-            <Text style={styles.statusValue}>Enabled & Encrypted</Text>
-          </View>
-        </Card>
       </ScrollView>
     </View>
   );
@@ -137,6 +144,12 @@ export const SuperAdminDashboardScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   scroll: { paddingBottom: 30 },
+  reportState: { marginTop: 32, marginBottom: 24 },
+  reportErrorCard: { marginHorizontal: 16, marginTop: 16 },
+  reportErrorTitle: { color: Colors.textPrimary, fontSize: 16, fontWeight: '700' },
+  reportErrorMessage: { color: Colors.textSecondary, fontSize: 14, lineHeight: 20, marginTop: 6 },
+  retryButton: { alignSelf: 'flex-start', backgroundColor: Colors.primary, borderRadius: 8, marginTop: 14, paddingHorizontal: 16, paddingVertical: 9 },
+  retryButtonText: { color: '#fff', fontWeight: '600' },
   statsRow: { flexDirection: 'row', paddingHorizontal: 10, marginTop: 10 },
   sectionHeader: {
     fontSize: 12,
@@ -169,7 +182,4 @@ const styles = StyleSheet.create({
   gridIcon: { fontSize: 28, marginBottom: 8 },
   gridTitle: { fontSize: 15, fontWeight: '800', color: Colors.textPrimary },
   gridDesc: { fontSize: 12, color: Colors.textSecondary, marginTop: 4, lineHeight: 16 },
-  statusRow: { flexDirection: 'row', justifyContent: 'space-between', marginVertical: 4 },
-  statusLabel: { fontSize: 13, color: Colors.textSecondary, fontWeight: '600' },
-  statusValue: { fontSize: 13, color: Colors.textPrimary, fontWeight: '700' },
 });

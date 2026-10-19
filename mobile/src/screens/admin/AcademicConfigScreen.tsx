@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,12 +16,16 @@ import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { Colors } from '../../constants/colors';
 import { SuperAdminApi, AcademicYear, Department } from '../../api/superadmin.api';
+import { CollegeSelector } from '../../components/CollegeSelector';
 
 export const AcademicConfigScreen: React.FC = () => {
   const [tab, setTab] = useState<'YEARS' | 'DEPTS'>('YEARS');
   const [years, setYears] = useState<AcademicYear[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [collegeId, setCollegeId] = useState('');
+  const currentCollegeId = useRef(collegeId);
 
   // Add Year Modal
   const [yearModal, setYearModal] = useState(false);
@@ -38,23 +42,35 @@ export const AcademicConfigScreen: React.FC = () => {
   const [savingDept, setSavingDept] = useState(false);
 
   const fetchData = async () => {
+    const requestedCollegeId = collegeId;
+    if (!collegeId) {
+      setYears([]);
+      setDepartments([]);
+      setErrorMessage('Select a college to view its academic configuration.');
+      return;
+    }
     setLoading(true);
     try {
       const [yRes, dRes] = await Promise.all([
-        SuperAdminApi.getAcademicYears(),
-        SuperAdminApi.getDepartments(),
+        SuperAdminApi.getAcademicYears(requestedCollegeId),
+        SuperAdminApi.getDepartments(requestedCollegeId),
       ]);
+      if (currentCollegeId.current !== requestedCollegeId) return;
       if (yRes.success && yRes.data) setYears(yRes.data);
       if (dRes.success && dRes.data) setDepartments(dRes.data);
-    } catch (e) {
+      setErrorMessage('');
+    } catch (e: any) {
+      if (currentCollegeId.current !== requestedCollegeId) return;
+      setErrorMessage(e?.message || 'Could not load academic configuration. Check your connection and try again.');
     } finally {
-      setLoading(false);
+      if (currentCollegeId.current === requestedCollegeId) setLoading(false);
     }
   };
 
   useEffect(() => {
+    currentCollegeId.current = collegeId;
     fetchData();
-  }, []);
+  }, [collegeId]);
 
   const handleCreateYear = async () => {
     if (!yearName) {
@@ -63,7 +79,7 @@ export const AcademicConfigScreen: React.FC = () => {
     }
     setSavingYear(true);
     try {
-      const res = await SuperAdminApi.createAcademicYear({ name: yearName, start_date: startDate, end_date: endDate });
+      const res = await SuperAdminApi.createAcademicYear({ college_id: collegeId, name: yearName, start_date: startDate, end_date: endDate });
       if (res.success) {
         Alert.alert('Success', 'Academic year created successfully.');
         setYearModal(false);
@@ -84,9 +100,11 @@ export const AcademicConfigScreen: React.FC = () => {
         text: 'Confirm',
         onPress: async () => {
           try {
-            await SuperAdminApi.setCurrentAcademicYear(id);
+            await SuperAdminApi.setCurrentAcademicYear(id, collegeId);
             fetchData();
-          } catch (e) {}
+          } catch (e: any) {
+            Alert.alert('Could not update academic year', e?.message || 'Check your connection and try again.');
+          }
         },
       },
     ]);
@@ -99,7 +117,7 @@ export const AcademicConfigScreen: React.FC = () => {
     }
     setSavingDept(true);
     try {
-      const res = await SuperAdminApi.createDepartment({ code: deptCode, name: deptName, description: deptDesc });
+      const res = await SuperAdminApi.createDepartment({ college_id: collegeId, code: deptCode, name: deptName, description: deptDesc });
       if (res.success) {
         Alert.alert('Success', 'Department created successfully.');
         setDeptModal(false);
@@ -118,6 +136,7 @@ export const AcademicConfigScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <Header title="Academic Configuration" subtitle="Sessions, Semesters & Department Structure" />
+      <CollegeSelector value={collegeId} onChange={setCollegeId} />
 
       {/* Tabs */}
       <View style={styles.tabBar}>
@@ -142,6 +161,8 @@ export const AcademicConfigScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.scroll}>
         {loading ? (
           <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
+        ) : errorMessage ? (
+          <Text style={styles.emptyText}>{errorMessage}</Text>
         ) : tab === 'YEARS' ? (
           <View>
             <Button
@@ -292,6 +313,7 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 13, fontWeight: '700', color: Colors.textSecondary },
   tabTextActive: { color: '#FFFFFF' },
   scroll: { paddingHorizontal: 16, paddingBottom: 24 },
+  emptyText: { color: Colors.textSecondary, textAlign: 'center', paddingVertical: 24 },
   card: { padding: 16, marginBottom: 12 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 },
   titleText: { fontSize: 16, fontWeight: '800', color: Colors.textPrimary },

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service';
 import { ApiResponse } from '../utils/api-response';
 import { AuthenticatedRequest } from '../models/types';
+import { AuthorizationError } from '../utils/errors';
 
 export class AuthController {
   /**
@@ -148,7 +149,15 @@ export class AuthController {
     try {
       const { id } = req.params;
       const { status } = req.body;
-      const result = await AuthService.updateUserStatus(id, status);
+      const user = req.user!;
+      const isSuperAdmin = user.user_type === 'SUPER_ADMIN' || user.roles.includes('SUPER_ADMIN');
+      if (!isSuperAdmin && !user.college_id) {
+        throw new AuthorizationError('College scope is required to manage account status');
+      }
+      const result = await AuthService.updateUserStatus(id, status, {
+        isSuperAdmin,
+        college_id: user.college_id,
+      });
       return ApiResponse.success(res, 'Account status updated successfully', result);
     } catch (error) {
       next(error);

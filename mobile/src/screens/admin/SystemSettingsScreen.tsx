@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,17 +13,29 @@ import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Colors } from '../../constants/colors';
 import { SuperAdminApi, SystemSetting } from '../../api/superadmin.api';
+import { CollegeSelector } from '../../components/CollegeSelector';
 
 export const SystemSettingsScreen: React.FC = () => {
   const [settings, setSettings] = useState<SystemSetting[]>([]);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [collegeId, setCollegeId] = useState('');
+  const [errorMessage, setErrorMessage] = useState('Select a college to view its system settings.');
+  const currentCollegeId = useRef(collegeId);
 
   const fetchSettings = async () => {
+    const requestedCollegeId = collegeId;
+    if (!collegeId) {
+      setSettings([]);
+      setFormValues({});
+      setErrorMessage('Select a college to view its system settings.');
+      return;
+    }
     setLoading(true);
     try {
-      const res = await SuperAdminApi.getSystemSettings();
+      const res = await SuperAdminApi.getSystemSettings(requestedCollegeId);
+      if (currentCollegeId.current !== requestedCollegeId) return;
       if (res.success && res.data) {
         setSettings(res.data);
         const map: Record<string, string> = {};
@@ -31,22 +43,36 @@ export const SystemSettingsScreen: React.FC = () => {
           map[s.setting_key] = s.setting_value;
         });
         setFormValues(map);
+        setErrorMessage('');
+      } else {
+        setSettings([]);
+        setFormValues({});
+        setErrorMessage(res.message || 'No settings were returned for this college.');
       }
-    } catch (e) {
+    } catch (e: any) {
+      if (currentCollegeId.current !== requestedCollegeId) return;
+      setSettings([]);
+      setFormValues({});
+      setErrorMessage(e?.message || 'Could not load system settings. Check your connection and try again.');
     } finally {
-      setLoading(false);
+      if (currentCollegeId.current === requestedCollegeId) setLoading(false);
     }
   };
 
   useEffect(() => {
+    currentCollegeId.current = collegeId;
     fetchSettings();
-  }, []);
+  }, [collegeId]);
 
   const handleUpdate = (key: string, val: string) => {
     setFormValues((prev) => ({ ...prev, [key]: val }));
   };
 
   const handleSave = async () => {
+    if (!collegeId) {
+      Alert.alert('Select a college', 'Choose a college before saving system settings.');
+      return;
+    }
     setSaving(true);
     try {
       const payload = Object.keys(formValues).map((key) => {
@@ -58,7 +84,7 @@ export const SystemSettingsScreen: React.FC = () => {
         };
       });
 
-      const res = await SuperAdminApi.updateSystemSettings(payload);
+      const res = await SuperAdminApi.updateSystemSettings(collegeId, payload);
       if (res.success) {
         Alert.alert('Settings Saved', 'System configuration has been successfully updated.');
         fetchSettings();
@@ -87,12 +113,16 @@ export const SystemSettingsScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Header title="System Settings" subtitle="Global Configuration & Policies" />
+      <Header title="System Settings" subtitle="Configuration for the selected college" />
+      <CollegeSelector value={collegeId} onChange={setCollegeId} />
       <ScrollView contentContainerStyle={styles.scroll}>
         {loading ? (
           <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
+        ) : errorMessage ? (
+          <Text style={styles.emptyText}>{errorMessage}</Text>
         ) : (
           <View>
+            {settings.length === 0 && <Text style={styles.emptyText}>No saved settings exist for this college.</Text>}
             {Object.keys(grouped).map((group) => (
               <View key={group} style={{ marginBottom: 20 }}>
                 <Text style={styles.groupTitle}>{groupIcons[group] || group}</Text>
@@ -131,6 +161,7 @@ const styles = StyleSheet.create({
   card: { padding: 14, marginBottom: 10 },
   settingKey: { fontSize: 14, fontWeight: '800', color: Colors.textPrimary },
   settingDesc: { fontSize: 12, color: Colors.textSecondary, marginVertical: 4 },
+  emptyText: { color: Colors.textSecondary, textAlign: 'center', marginTop: 28 },
   input: {
     height: 44,
     borderWidth: 1.5,

@@ -15,10 +15,11 @@ import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { Colors } from '../../constants/colors';
-import { SuperAdminApi, Administrator } from '../../api/superadmin.api';
+import { SuperAdminApi, Administrator, College } from '../../api/superadmin.api';
 
 export const AdministratorsScreen: React.FC = () => {
   const [admins, setAdmins] = useState<Administrator[]>([]);
+  const [colleges, setColleges] = useState<College[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -26,10 +27,11 @@ export const AdministratorsScreen: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [mobile, setMobile] = useState('');
-  const [collegeId, setCollegeId] = useState('col-001');
+  const [collegeId, setCollegeId] = useState('');
   const [saving, setSaving] = useState(false);
 
   const fetchAdmins = async () => {
@@ -39,9 +41,19 @@ export const AdministratorsScreen: React.FC = () => {
       if (res.success && res.data) {
         setAdmins(res.data.administrators);
       }
-    } catch (e) {
+    } catch (e: any) {
+      Alert.alert('Could not load administrators', e?.message || 'Check your connection and try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchColleges = async () => {
+    try {
+      const res = await SuperAdminApi.getColleges(1, 100);
+      if (res.success && res.data) setColleges(res.data.colleges);
+    } catch (e: any) {
+      Alert.alert('Could not load colleges', e?.message || 'Check your connection and try again.');
     }
   };
 
@@ -49,9 +61,13 @@ export const AdministratorsScreen: React.FC = () => {
     fetchAdmins();
   }, [search]);
 
+  useEffect(() => {
+    fetchColleges();
+  }, []);
+
   const handleCreateAdmin = async () => {
-    if (!username || !email || !firstName || !lastName) {
-      Alert.alert('Required Fields', 'Username, Email, and Name are required.');
+    if (!username || !email || !password || !firstName || !lastName || !collegeId) {
+      Alert.alert('Required Fields', 'Select a college and enter username, email, password, first name, and last name.');
       return;
     }
 
@@ -60,6 +76,7 @@ export const AdministratorsScreen: React.FC = () => {
       const res = await SuperAdminApi.createAdministrator({
         username,
         email,
+        password,
         first_name: firstName,
         last_name: lastName,
         mobile,
@@ -70,9 +87,11 @@ export const AdministratorsScreen: React.FC = () => {
         setModalVisible(false);
         setUsername('');
         setEmail('');
+        setPassword('');
         setFirstName('');
         setLastName('');
         setMobile('');
+        setCollegeId('');
         fetchAdmins();
       } else {
         Alert.alert('Error', res.message || 'Could not create administrator.');
@@ -127,7 +146,7 @@ export const AdministratorsScreen: React.FC = () => {
 
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>🏛️ College:</Text>
-                <Text style={styles.detailVal}>{admin.college_name || 'MIT Institute of Technology'}</Text>
+                <Text style={styles.detailVal}>{admin.college_name || admin.college_id}</Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>✉️ Email:</Text>
@@ -163,6 +182,26 @@ export const AdministratorsScreen: React.FC = () => {
                 </TouchableOpacity>
               </View>
 
+              <Text style={styles.inputLabel}>College</Text>
+              {colleges.filter((college) => college.status === 'ACTIVE').length === 0 ? (
+                <Text style={styles.emptyText}>No active colleges are available.</Text>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.collegeList}>
+                  {colleges.filter((college) => college.status === 'ACTIVE').map((college) => (
+                    <TouchableOpacity
+                      key={college.id}
+                      accessibilityRole="button"
+                      onPress={() => setCollegeId(college.id)}
+                      style={[styles.collegeOption, collegeId === college.id && styles.collegeOptionSelected]}
+                    >
+                      <Text style={[styles.collegeOptionText, collegeId === college.id && styles.collegeOptionTextSelected]}>
+                        {college.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+
               <Text style={styles.inputLabel}>Username</Text>
               <TextInput
                 style={styles.input}
@@ -177,8 +216,18 @@ export const AdministratorsScreen: React.FC = () => {
                 style={styles.input}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="admin@mit-eng.edu"
+                placeholder="name@institution.edu"
                 keyboardType="email-address"
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.inputLabel}>Initial Password</Text>
+              <TextInput
+                style={styles.input}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Set a temporary password"
+                secureTextEntry
                 autoCapitalize="none"
               />
 
@@ -208,7 +257,7 @@ export const AdministratorsScreen: React.FC = () => {
                 style={styles.input}
                 value={mobile}
                 onChangeText={setMobile}
-                placeholder="+91 9900000002"
+                placeholder="Phone number with country code"
                 keyboardType="phone-pad"
               />
 
@@ -283,4 +332,17 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     backgroundColor: '#F8FAFC',
   },
+  collegeList: { marginTop: 6, maxHeight: 44 },
+  collegeOption: {
+    justifyContent: 'center',
+    marginRight: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+  },
+  collegeOptionSelected: { borderColor: Colors.primary, backgroundColor: '#EFF6FF' },
+  collegeOptionText: { color: Colors.textSecondary, fontSize: 12, fontWeight: '600' },
+  collegeOptionTextSelected: { color: Colors.primary },
 });
