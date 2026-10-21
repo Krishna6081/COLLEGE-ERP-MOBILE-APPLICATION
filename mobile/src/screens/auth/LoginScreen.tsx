@@ -30,6 +30,7 @@ export const LoginScreen: React.FC = () => {
     { label: 'Accountant', user: 'accountant' },
     { label: 'Librarian', user: 'librarian' },
     { label: 'Parent', user: 'parent_david' },
+    { label: 'Super Admin', user: 'superadmin' },
   ];
 
   const handleLogin = async () => {
@@ -54,21 +55,25 @@ export const LoginScreen: React.FC = () => {
         email: `${identifier}@mit-eng.edu`,
         first_name: identifier.split('_')[0] || 'User',
         last_name: identifier.split('_')[1] || 'Demo',
-        user_type: identifier.includes('admin')
-          ? 'COLLEGE_ADMIN'
-          : identifier.includes('principal')
-          ? 'PRINCIPAL'
-          : identifier.includes('hod')
-          ? 'HOD'
-          : identifier.includes('faculty')
-          ? 'FACULTY'
-          : identifier.includes('accountant')
-          ? 'ACCOUNTANT'
-          : identifier.includes('librarian')
-          ? 'LIBRARIAN'
-          : identifier.includes('parent')
-          ? 'PARENT'
-          : 'STUDENT',
+       
+user_type: identifier.toLowerCase().includes('superadmin')
+  ? 'SUPER_ADMIN'
+  : identifier.toLowerCase().includes('admin')
+  ? 'COLLEGE_ADMIN'
+  : identifier.includes('principal')
+  ? 'PRINCIPAL'
+  : identifier.includes('hod')
+  ? 'HOD'
+  : identifier.includes('faculty')
+  ? 'FACULTY'
+  : identifier.includes('accountant')
+  ? 'ACCOUNTANT'
+  : identifier.includes('librarian')
+  ? 'LIBRARIAN'
+  : identifier.includes('parent')
+  ? 'PARENT'
+  : 'STUDENT',
+
         roles: [identifier.toUpperCase()],
         permissions: ['students.view', 'attendance.view', 'results.view'],
       };

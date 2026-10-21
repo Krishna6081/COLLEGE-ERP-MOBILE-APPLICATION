@@ -8,6 +8,6 @@ const DEV_API_URL = Platform.select({
 });
 
 export const API_CONFIG = {
-  BASE_URL: process.env.EXPO_PUBLIC_API_URL || DEV_API_URL,
+  BASE_URL: 'http://10.132.197.240:5000/api/v1',
   TIMEOUT: 15000,
 };

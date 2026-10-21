@@ -8,7 +8,7 @@ export async function runSeeder() {
   try {
     const passwordHash = await bcrypt.hash('password123', 10);
 
-    // Insert Default Roles
+    // 1. Insert Default Roles
     const roles = [
       ['role-001', 'Super Admin', 'SUPER_ADMIN', 'Full system control', 1],
       ['role-002', 'College Admin', 'COLLEGE_ADMIN', 'College level admin', 1],
@@ -27,20 +27,21 @@ export async function runSeeder() {
 
     for (const r of roles) {
       await pool.query(
-        `INSERT INTO roles (id, name, code, description, is_system) VALUES (?, ?, ?, ?, ?)
+        `INSERT INTO roles (id, name, code, description, is_system) 
+         VALUES (?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE name=VALUES(name)`,
         r
       );
     }
 
-    // Insert College
+    // 2. Insert College
     await pool.query(
       `INSERT INTO colleges (id, code, name, address, email, phone, website) 
        VALUES ('col-001', 'MIT-ENG', 'MIT Institute of Technology & Engineering', 'Tech Campus, Sector 5', 'admin@mit-eng.edu', '+91 9876543210', 'https://mit-eng.edu')
        ON DUPLICATE KEY UPDATE name=VALUES(name)`
     );
 
-    // Insert Users
+    // 3. Insert Users
     const users = [
       ['user-superadmin', 'col-001', 'superadmin', 'superadmin@mit-eng.edu', passwordHash, '+919900000001', 'System', 'SuperAdmin', 'SUPER_ADMIN'],
       ['user-admin', 'col-001', 'collegeadmin', 'admin@mit-eng.edu', passwordHash, '+919900000002', 'Arthur', 'Admin', 'COLLEGE_ADMIN'],
@@ -67,7 +68,7 @@ export async function runSeeder() {
       );
     }
 
-    // Map User Roles
+    // 4. Map User Roles (Fix for Primary Key Conflict)
     const userRoleMappings = [
       ['user-superadmin', 'role-001'],
       ['user-admin', 'role-002'],
@@ -87,7 +88,8 @@ export async function runSeeder() {
 
     for (const m of userRoleMappings) {
       await pool.query(
-        `INSERT INTO user_roles (user_id, role_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE role_id=VALUES(role_id)`,
+        `INSERT INTO user_roles (user_id, role_id) VALUES (?, ?) 
+         ON DUPLICATE KEY UPDATE role_id=user_roles.role_id`,
         m
       );
     }

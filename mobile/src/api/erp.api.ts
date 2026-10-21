@@ -72,3 +72,25 @@ export class ErpApi {
     return await apiClient.get('/placements/drives');
   }
 }
+
+export const createCollege = async (collegeData: {
+  code: string;
+  name: string;
+  address: string;
+  email: string;
+  phone: string;
+}) => {
+  try {
+    const response = await apiClient.post('/colleges', collegeData);
+    console.log('Create college response:', response);
+    return response;
+  } catch (error: any) {
+    console.error(
+      'Create college failed:',
+      error?.response?.status,
+      error?.response?.data,
+      error?.message
+    );
+    throw error;
+  }
+};

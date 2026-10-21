@@ -2,6 +2,8 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text } from 'react-native';
+import { SuperAdminDashboardScreen } from '../screens/dashboard/SuperAdminDashboardScreen';
+import { AddCollegeScreen } from '../screens/super-admin/AddCollegeScreen';
 import { useAuthStore } from '../store/useAuthStore';
 import { Colors } from '../constants/colors';
 
@@ -36,6 +38,21 @@ import { SettingsScreen } from '../screens/settings/SettingsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+
+function SuperAdminStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen
+        name="SuperAdminDashboard"
+        component={SuperAdminDashboardScreen}
+      />
+      <Stack.Screen
+        name="AddCollege"
+        component={AddCollegeScreen}
+      />
+    </Stack.Navigator>
+  );
+}
 
 function StudentStack() {
   return (
@@ -77,9 +94,10 @@ export const RoleBasedNavigator: React.FC = () => {
       case 'PRINCIPAL':
       case 'VICE_PRINCIPAL':
         return PrincipalDashboardScreen;
-      case 'COLLEGE_ADMIN':
       case 'SUPER_ADMIN':
-        return AdminStack;
+        return SuperAdminStack;
+      case 'COLLEGE_ADMIN':
+         return AdminStack;
       case 'ACCOUNTANT':
         return AccountantDashboardScreen;
       case 'LIBRARIAN':

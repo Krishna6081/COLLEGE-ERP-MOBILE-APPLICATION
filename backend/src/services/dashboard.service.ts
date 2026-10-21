@@ -55,29 +55,72 @@ export class DashboardService {
             { id: 'n1', title: 'HOD Monthly Review Meeting', date: 'Oct 06, 2026', priority: 'URGENT' },
           ],
         };
+        case 'PRINCIPAL':
+case 'COLLEGE_ADMIN':
+case 'SUPER_ADMIN': {
+  const [
+    [collegeRows],
+    [studentRows],
+    [facultyRows],
+    [adminRows],
+  ] = await Promise.all([
+    pool.query(
+      'SELECT COUNT(*) AS total FROM colleges'
+    ),
+    pool.query(
+      'SELECT COUNT(*) AS total FROM students'
+    ),
+    pool.query(
+      'SELECT COUNT(*) AS total FROM faculty'
+    ),
+    pool.query(`
+      SELECT COUNT(DISTINCT u.id) AS total
+      FROM users u
+      INNER JOIN user_roles ur ON ur.user_id = u.id
+      INNER JOIN roles r ON r.id = ur.role_id
+      WHERE r.code = 'COLLEGE_ADMIN'
+        AND u.status = 'ACTIVE'
+        AND u.is_active = 1
+        AND u.deleted_at IS NULL
+    `),
+  ]);
 
-      case 'PRINCIPAL':
-      case 'COLLEGE_ADMIN':
-      case 'SUPER_ADMIN':
-        return {
-          role: role,
-          total_students: 2450,
-          total_faculty: 120,
-          total_departments: 6,
-          overall_attendance: 87.4,
-          total_fee_collected: '₹1,24,50,000',
-          pending_fee_amount: '₹32,10,000',
-          placements_percentage: 94.2,
-          recent_notices_count: 12,
-          complaints_open: 4,
-          statistics_chart: [
-            { label: 'CSE', strength: 480, attendance: 91 },
-            { label: 'ECE', strength: 420, attendance: 86 },
-            { label: 'MECH', strength: 360, attendance: 84 },
-            { label: 'CIVIL', strength: 300, attendance: 85 },
-            { label: 'IT', strength: 450, attendance: 90 },
-          ],
-        };
+  const totalColleges = Number(
+    (collegeRows as any[])[0]?.total ?? 0
+  );
+  const totalStudents = Number(
+    (studentRows as any[])[0]?.total ?? 0
+  );
+  const totalFaculty = Number(
+    (facultyRows as any[])[0]?.total ?? 0
+  );
+  const collegeAdmins = Number(
+    (adminRows as any[])[0]?.total ?? 0
+  );
+
+  return {
+    role,
+    total_colleges: totalColleges,
+    total_students: totalStudents,
+    total_faculty: totalFaculty,
+    college_admins: collegeAdmins,
+
+    total_departments: 6,
+    overall_attendance: 87.4,
+    total_fee_collected: '₹1,24,50,000',
+    pending_fee_amount: '₹32,10,000',
+    placements_percentage: 94.2,
+    recent_notices_count: 12,
+    complaints_open: 4,
+    statistics_chart: [
+      { label: 'CSE', strength: 480, attendance: 91 },
+      { label: 'ECE', strength: 420, attendance: 86 },
+      { label: 'MECH', strength: 360, attendance: 84 },
+      { label: 'CIVIL', strength: 300, attendance: 85 },
+      { label: 'IT', strength: 450, attendance: 90 },
+    ],
+  };
+}
 
       case 'ACCOUNTANT':
         return {

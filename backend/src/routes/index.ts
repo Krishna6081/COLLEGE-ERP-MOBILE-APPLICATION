@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import collegeRoutes from './college.routes';
 import authRoutes from './auth.routes';
 import studentRoutes from './student.routes';
 import facultyRoutes from './faculty.routes';
@@ -11,6 +12,7 @@ import examRoutes from './exam.routes';
 import { complaintRouter, certificateRouter, libraryRouter, placementRouter } from './auxiliary.routes';
 
 const router = Router();
+router.use('/colleges', collegeRoutes);
 
 router.use('/auth', authRoutes);
 router.use('/students', studentRoutes);
