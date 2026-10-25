@@ -15,6 +15,12 @@ import { AccountantDashboardScreen } from '../screens/dashboard/AccountantDashbo
 import { LibrarianDashboardScreen } from '../screens/dashboard/LibrarianDashboardScreen';
 import { ParentDashboardScreen } from '../screens/dashboard/ParentDashboardScreen';
 
+// Principal Module Screens
+import { PrincipalDepartmentsScreen } from '../screens/principal/PrincipalDepartmentsScreen';
+import { PrincipalApprovalsScreen } from '../screens/principal/PrincipalApprovalsScreen';
+import { PrincipalReportsScreen } from '../screens/principal/PrincipalReportsScreen';
+import { PrincipalBroadcastNoticeScreen } from '../screens/principal/PrincipalBroadcastNoticeScreen';
+
 // Feature Screens
 import { StudentListScreen } from '../screens/students/StudentListScreen';
 import { StudentDetailScreen } from '../screens/students/StudentDetailScreen';
@@ -64,9 +70,81 @@ function AdminStack() {
   );
 }
 
+function PrincipalStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="PrincipalDashboard" component={PrincipalDashboardScreen} />
+      <Stack.Screen name="PrincipalDepartments" component={PrincipalDepartmentsScreen} />
+      <Stack.Screen name="PrincipalApprovals" component={PrincipalApprovalsScreen} />
+      <Stack.Screen name="PrincipalReports" component={PrincipalReportsScreen} />
+      <Stack.Screen name="PrincipalBroadcastNotice" component={PrincipalBroadcastNoticeScreen} />
+      <Stack.Screen name="StudentList" component={StudentListScreen} />
+      <Stack.Screen name="FacultyList" component={FacultyListScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function PrincipalTabNavigator() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.textSecondary,
+        tabBarStyle: { height: 60, paddingBottom: 8, paddingTop: 4 },
+      }}
+    >
+      <Tab.Screen
+        name="PrincipalHomeTab"
+        component={PrincipalStack}
+        options={{
+          tabBarLabel: 'Executive',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>🏛️</Text>,
+        }}
+      />
+      <Tab.Screen
+        name="DepartmentsTab"
+        component={PrincipalDepartmentsScreen}
+        options={{
+          tabBarLabel: 'Departments',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>🏢</Text>,
+        }}
+      />
+      <Tab.Screen
+        name="ApprovalsTab"
+        component={PrincipalApprovalsScreen}
+        options={{
+          tabBarLabel: 'Approvals',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>📝</Text>,
+        }}
+      />
+      <Tab.Screen
+        name="ReportsTab"
+        component={PrincipalReportsScreen}
+        options={{
+          tabBarLabel: 'Analytics',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>📊</Text>,
+        }}
+      />
+      <Tab.Screen
+        name="ProfileTab"
+        component={ProfileScreen}
+        options={{
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>👤</Text>,
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
+
 export const RoleBasedNavigator: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const role = user?.user_type || 'STUDENT';
+
+  if (role === 'PRINCIPAL' || role === 'VICE_PRINCIPAL') {
+    return <PrincipalTabNavigator />;
+  }
 
   const getDashboardComponent = () => {
     switch (role) {
@@ -74,9 +152,6 @@ export const RoleBasedNavigator: React.FC = () => {
         return FacultyDashboardScreen;
       case 'HOD':
         return HodDashboardScreen;
-      case 'PRINCIPAL':
-      case 'VICE_PRINCIPAL':
-        return PrincipalDashboardScreen;
       case 'COLLEGE_ADMIN':
       case 'SUPER_ADMIN':
         return AdminStack;

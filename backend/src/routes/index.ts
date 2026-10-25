@@ -8,6 +8,7 @@ import dashboardRoutes from './dashboard.routes';
 import feeRoutes from './fee.routes';
 import noticeRoutes from './notice.routes';
 import examRoutes from './exam.routes';
+import principalRoutes from './principal.routes';
 import { complaintRouter, certificateRouter, libraryRouter, placementRouter } from './auxiliary.routes';
 
 const router = Router();
@@ -21,6 +22,7 @@ router.use('/dashboard', dashboardRoutes);
 router.use('/fees', feeRoutes);
 router.use('/notices', noticeRoutes);
 router.use('/exams', examRoutes);
+router.use('/principal', principalRoutes);
 router.use('/complaints', complaintRouter);
 router.use('/certificates', certificateRouter);
 router.use('/library', libraryRouter);
