@@ -9,6 +9,7 @@ import feeRoutes from './fee.routes';
 import noticeRoutes from './notice.routes';
 import examRoutes from './exam.routes';
 import principalRoutes from './principal.routes';
+import hodRoutes from './hod.routes';
 import { complaintRouter, certificateRouter, libraryRouter, placementRouter } from './auxiliary.routes';
 
 const router = Router();
@@ -23,6 +24,7 @@ router.use('/fees', feeRoutes);
 router.use('/notices', noticeRoutes);
 router.use('/exams', examRoutes);
 router.use('/principal', principalRoutes);
+router.use('/hod', hodRoutes);
 router.use('/complaints', complaintRouter);
 router.use('/certificates', certificateRouter);
 router.use('/library', libraryRouter);

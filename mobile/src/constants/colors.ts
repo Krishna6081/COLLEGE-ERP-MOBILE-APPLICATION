@@ -8,6 +8,7 @@ export const Colors = {
   info: '#0284C7',        // Sky Blue
   background: '#F8FAFC',   // Clean Off-White
   cardBg: '#FFFFFF',
+  text: '#0F172A',
   textPrimary: '#0F172A',
   textSecondary: '#64748B',
   border: '#E2E8F0',

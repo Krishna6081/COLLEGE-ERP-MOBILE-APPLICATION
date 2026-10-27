@@ -14,19 +14,38 @@ export const ProfileScreen: React.FC = () => {
     if (user?.user_type === 'PRINCIPAL') {
       return 'RF';
     }
+    if (user?.user_type === 'HOD') {
+      return 'AT';
+    }
     const first = user?.first_name?.[0] || 'U';
     const last = user?.last_name?.[0] || '';
     return `${first}${last}`.toUpperCase();
   };
 
   const getDisplayName = () => {
-    if (user?.user_type === 'PRINCIPAL') {
-      return 'Dr. Richard Feynman';
-    }
     if (user?.first_name) {
       return `${user.first_name} ${user.last_name || ''}`.trim();
     }
+    if (user?.user_type === 'PRINCIPAL') {
+      return 'Dr. Richard Feynman';
+    }
+    if (user?.user_type === 'HOD') {
+      return 'Prof. Alan Turing';
+    }
     return 'College User';
+  };
+
+  const getDesignation = () => {
+    if (user?.user_type === 'PRINCIPAL') {
+      return 'Principal & Executive Head';
+    }
+    if (user?.user_type === 'HOD') {
+      return 'Head of Department & Professor (CSE)';
+    }
+    if (user?.user_type === 'FACULTY') {
+      return 'Associate Professor';
+    }
+    return user?.user_type || 'Academic Staff';
   };
 
   const handleLogout = () => {
@@ -63,19 +82,25 @@ export const ProfileScreen: React.FC = () => {
           <Text style={styles.headerTxt}>Account Credentials</Text>
           <View style={styles.credentialRow}>
             <Text style={styles.credentialLabel}>Username:</Text>
-            <Text style={styles.credentialValue}>{user?.username || 'principal'}</Text>
+            <Text style={styles.credentialValue}>
+              {user?.username || (user?.user_type === 'HOD' ? 'hod_cse' : 'principal')}
+            </Text>
           </View>
           <View style={styles.credentialRow}>
             <Text style={styles.credentialLabel}>Official Email:</Text>
-            <Text style={styles.credentialValue}>{user?.email || 'principal@mit-eng.edu'}</Text>
+            <Text style={styles.credentialValue}>
+              {user?.email || (user?.user_type === 'HOD' ? 'hod.cse@mit-eng.edu' : 'principal@mit-eng.edu')}
+            </Text>
           </View>
           <View style={styles.credentialRow}>
             <Text style={styles.credentialLabel}>Employee ID:</Text>
-            <Text style={styles.credentialValue}>{user?.id || 'EMP-EXEC-001'}</Text>
+            <Text style={styles.credentialValue}>
+              {user?.id || (user?.user_type === 'HOD' ? 'EMP-CSE-001' : 'EMP-EXEC-001')}
+            </Text>
           </View>
           <View style={styles.credentialRow}>
             <Text style={styles.credentialLabel}>Designation:</Text>
-            <Text style={styles.credentialValue}>Principal & Executive Head</Text>
+            <Text style={styles.credentialValue}>{getDesignation()}</Text>
           </View>
         </Card>
 

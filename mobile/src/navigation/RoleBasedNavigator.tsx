@@ -22,6 +22,13 @@ import { PrincipalReportsScreen } from '../screens/principal/PrincipalReportsScr
 import { PrincipalBroadcastNoticeScreen } from '../screens/principal/PrincipalBroadcastNoticeScreen';
 
 // Feature Screens
+import { HodFacultyWorkloadScreen } from '../screens/hod/HodFacultyWorkloadScreen';
+import { HodStudentsScreen } from '../screens/hod/HodStudentsScreen';
+import { HodLeavesScreen } from '../screens/hod/HodLeavesScreen';
+import { HodTimetableScreen } from '../screens/hod/HodTimetableScreen';
+import { HodAttendanceScreen } from '../screens/hod/HodAttendanceScreen';
+import { HodNoticeScreen } from '../screens/hod/HodNoticeScreen';
+import { HodPerformanceScreen } from '../screens/hod/HodPerformanceScreen';
 import { StudentListScreen } from '../screens/students/StudentListScreen';
 import { StudentDetailScreen } from '../screens/students/StudentDetailScreen';
 import { FacultyListScreen } from '../screens/faculty/FacultyListScreen';
@@ -138,6 +145,75 @@ function PrincipalTabNavigator() {
   );
 }
 
+function HodStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="HodDashboard" component={HodDashboardScreen} />
+      <Stack.Screen name="HodFacultyWorkload" component={HodFacultyWorkloadScreen} />
+      <Stack.Screen name="HodStudents" component={HodStudentsScreen} />
+      <Stack.Screen name="HodLeaves" component={HodLeavesScreen} />
+      <Stack.Screen name="HodTimetable" component={HodTimetableScreen} />
+      <Stack.Screen name="HodAttendance" component={HodAttendanceScreen} />
+      <Stack.Screen name="HodNotice" component={HodNoticeScreen} />
+      <Stack.Screen name="HodPerformance" component={HodPerformanceScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function HodTabNavigator() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.textSecondary,
+        tabBarStyle: { height: 60, paddingBottom: 8, paddingTop: 4 },
+      }}
+    >
+      <Tab.Screen
+        name="HodHomeTab"
+        component={HodStack}
+        options={{
+          tabBarLabel: 'Executive',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>🏛️</Text>,
+        }}
+      />
+      <Tab.Screen
+        name="HodFacultyTab"
+        component={HodFacultyWorkloadScreen}
+        options={{
+          tabBarLabel: 'Faculty',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>👥</Text>,
+        }}
+      />
+      <Tab.Screen
+        name="HodStudentsTab"
+        component={HodStudentsScreen}
+        options={{
+          tabBarLabel: 'Students',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>🎓</Text>,
+        }}
+      />
+      <Tab.Screen
+        name="HodApprovalsTab"
+        component={HodLeavesScreen}
+        options={{
+          tabBarLabel: 'Leaves',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>📝</Text>,
+        }}
+      />
+      <Tab.Screen
+        name="ProfileTab"
+        component={ProfileScreen}
+        options={{
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>👤</Text>,
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
+
 export const RoleBasedNavigator: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const role = user?.user_type || 'STUDENT';
@@ -146,12 +222,14 @@ export const RoleBasedNavigator: React.FC = () => {
     return <PrincipalTabNavigator />;
   }
 
+  if (role === 'HOD') {
+    return <HodTabNavigator />;
+  }
+
   const getDashboardComponent = () => {
     switch (role) {
       case 'FACULTY':
         return FacultyDashboardScreen;
-      case 'HOD':
-        return HodDashboardScreen;
       case 'COLLEGE_ADMIN':
       case 'SUPER_ADMIN':
         return AdminStack;
