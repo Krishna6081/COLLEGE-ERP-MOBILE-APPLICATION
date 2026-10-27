@@ -203,7 +203,7 @@ export class AuthService {
     const roleMap: Record<string, { role: string; name: string }> = {
       superadmin: { role: 'SUPER_ADMIN', name: 'Super Admin' },
       collegeadmin: { role: 'COLLEGE_ADMIN', name: 'College Admin' },
-      principal: { role: 'PRINCIPAL', name: 'Dr. Principal' },
+      principal: { role: 'PRINCIPAL', name: 'Dr. Richard Feynman' },
       viceprincipal: { role: 'VICE_PRINCIPAL', name: 'Vice Principal' },
       hod_cse: { role: 'HOD', name: 'HOD CSE' },
       faculty_john: { role: 'FACULTY', name: 'John Smith' },

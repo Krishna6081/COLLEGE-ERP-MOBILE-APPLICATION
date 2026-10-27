@@ -16,20 +16,20 @@ import { AuthApi } from '../../api/auth.api';
 import { useAuthStore } from '../../store/useAuthStore';
 
 export const LoginScreen: React.FC = () => {
-  const [identifier, setIdentifier] = useState('student_alex');
+  const [identifier, setIdentifier] = useState('principal');
   const [password, setPassword] = useState('password123');
   const [loading, setLoading] = useState(false);
   const loginStore = useAuthStore((state) => state.login);
 
   const quickRoles = [
-    { label: 'Student', user: 'student_alex' },
-    { label: 'Faculty', user: 'faculty_john' },
-    { label: 'HOD', user: 'hod_cse' },
-    { label: 'Admin', user: 'collegeadmin' },
     { label: 'Principal', user: 'principal' },
+    { label: 'HOD', user: 'hod_cse' },
+    { label: 'Faculty', user: 'faculty_john' },
+    { label: 'Student', user: 'student_alex' },
+    { label: 'Admin', user: 'collegeadmin' },
     { label: 'Accountant', user: 'accountant' },
     { label: 'Librarian', user: 'librarian' },
-    { label: 'Parent', user: 'parent_david' },
+    { label: 'Placement', user: 'placement' },
   ];
 
   const handleLogin = async () => {
@@ -46,30 +46,37 @@ export const LoginScreen: React.FC = () => {
       } else {
         Alert.alert('Login Failed', res.message || 'Invalid credentials');
       }
-    } catch (error: any) {
-      // Direct mock login fallback if server endpoint is offline
+    } catch {
+      // Robust offline fallback with actual college designations and names
+      const realUserMap: Record<string, { first: string; last: string; role: string }> = {
+        principal: { first: 'Dr. Richard', last: 'Feynman', role: 'PRINCIPAL' },
+        collegeadmin: { first: 'Arthur', last: 'Admin', role: 'COLLEGE_ADMIN' },
+        superadmin: { first: 'System', last: 'Administrator', role: 'SUPER_ADMIN' },
+        hod_cse: { first: 'Prof. Alan', last: 'Turing', role: 'HOD' },
+        faculty_john: { first: 'John', last: 'Smith', role: 'FACULTY' },
+        student_alex: { first: 'Alex', last: 'Johnson', role: 'STUDENT' },
+        parent_david: { first: 'David', last: 'Johnson', role: 'PARENT' },
+        accountant: { first: 'Robert', last: 'Ledger', role: 'ACCOUNTANT' },
+        librarian: { first: 'Maria', last: 'Bookman', role: 'LIBRARIAN' },
+        placement: { first: 'Patricia', last: 'Hire', role: 'PLACEMENT_OFFICER' },
+      };
+
+      const matched = realUserMap[identifier] || {
+        first: identifier === 'principal' ? 'Dr. Richard' : identifier,
+        last: identifier === 'principal' ? 'Feynman' : 'Officer',
+        role: identifier.includes('principal') ? 'PRINCIPAL' : 'STUDENT',
+      };
+
       const mockUser = {
         id: `user-${identifier}`,
         username: identifier,
         email: `${identifier}@mit-eng.edu`,
-        first_name: identifier.split('_')[0] || 'User',
-        last_name: identifier.split('_')[1] || 'Demo',
-        user_type: identifier.includes('admin')
-          ? 'COLLEGE_ADMIN'
-          : identifier.includes('principal')
-          ? 'PRINCIPAL'
-          : identifier.includes('hod')
-          ? 'HOD'
-          : identifier.includes('faculty')
-          ? 'FACULTY'
-          : identifier.includes('accountant')
-          ? 'ACCOUNTANT'
-          : identifier.includes('librarian')
-          ? 'LIBRARIAN'
-          : identifier.includes('parent')
-          ? 'PARENT'
-          : 'STUDENT',
-        roles: [identifier.toUpperCase()],
+        first_name: matched.first,
+        last_name: matched.last,
+        user_type: matched.role,
+        college_id: 'col-001',
+        college_name: 'MIT Institute of Technology',
+        roles: [matched.role],
         permissions: ['students.view', 'attendance.view', 'results.view'],
       };
       await loginStore(mockUser as any, 'mock_access_token', 'mock_refresh_token');
@@ -148,66 +155,72 @@ const styles = StyleSheet.create({
   },
   collegeName: {
     color: '#93C5FD',
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1.2,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    marginBottom: 6,
   },
   appTitle: {
     color: '#FFFFFF',
     fontSize: 28,
     fontWeight: '800',
-    marginTop: 6,
+    marginBottom: 4,
   },
   subtitle: {
-    color: '#E2E8F0',
+    color: '#BFDBFE',
     fontSize: 14,
-    marginTop: 4,
   },
   formCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
     elevation: 4,
   },
   inputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textPrimary,
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.textSecondary,
     marginBottom: 6,
-    marginTop: 12,
+    textTransform: 'uppercase',
   },
   input: {
-    height: 48,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: 14,
+    paddingVertical: 12,
     fontSize: 15,
     color: Colors.textPrimary,
-    backgroundColor: Colors.surface,
+    marginBottom: 16,
   },
   submitBtn: {
-    marginTop: 20,
+    marginTop: 8,
+    marginBottom: 20,
   },
   quickLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.textSecondary,
-    marginTop: 24,
     marginBottom: 10,
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   chipContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: 8,
     justifyContent: 'center',
   },
   chip: {
-    backgroundColor: Colors.surface,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    margin: 4,
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -217,10 +230,11 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: 12,
-    color: Colors.textPrimary,
+    color: Colors.textSecondary,
     fontWeight: '600',
   },
   chipTextActive: {
     color: '#FFFFFF',
+    fontWeight: '700',
   },
 });
