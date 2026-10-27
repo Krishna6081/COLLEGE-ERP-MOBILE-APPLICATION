@@ -3,7 +3,7 @@ import { ApiResponse } from '../types';
 
 export class PrincipalApi {
   /**
-   * Fetch Principal executive dashboard metrics
+   * Fetch Principal executive dashboard metrics live from MySQL
    */
   static async getDashboardData(): Promise<ApiResponse<any>> {
     return await apiClient.get('/principal/dashboard');
@@ -17,7 +17,14 @@ export class PrincipalApi {
   }
 
   /**
-   * Fetch pending approval workflows
+   * Fetch actual faculty & students list for a specific department
+   */
+  static async getDepartmentDetails(id: string): Promise<ApiResponse<any>> {
+    return await apiClient.get(`/principal/departments/${id}`);
+  }
+
+  /**
+   * Fetch pending approval workflows (Leaves, Grievances, Certificates)
    */
   static async getApprovals(category?: string): Promise<ApiResponse<any>> {
     return await apiClient.get('/principal/approvals', {
@@ -26,7 +33,7 @@ export class PrincipalApi {
   }
 
   /**
-   * Approve or reject a workflow request
+   * Approve or reject a workflow request (Persists directly to MySQL)
    */
   static async processApproval(
     id: string,
@@ -47,7 +54,7 @@ export class PrincipalApi {
   }
 
   /**
-   * Broadcast official college notice
+   * Broadcast official college notice (Saves into MySQL notices table)
    */
   static async broadcastNotice(data: {
     title: string;

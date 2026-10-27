@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { Header } from '../../components/Header';
 import { Card } from '../../components/Card';
@@ -35,94 +36,20 @@ export const PrincipalDepartmentsScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Department Drilldown Modal State
+  const [selectedDept, setSelectedDept] = useState<DepartmentItem | null>(null);
+  const [deptDetails, setDeptDetails] = useState<any>(null);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [modalTab, setModalTab] = useState<'FACULTY' | 'STUDENTS'>('FACULTY');
+
   const fetchDepartments = async () => {
     try {
       const response = await PrincipalApi.getDepartments();
       if (response && response.data) {
         setDepartments(response.data);
       }
-    } catch {
-      // Offline fallback data
-      setDepartments([
-        {
-          id: 'dept-001',
-          code: 'CSE',
-          name: 'Computer Science & Engineering',
-          hod_name: 'Prof. Alan Turing',
-          hod_email: 'hod.cse@mit-eng.edu',
-          students_count: 520,
-          faculty_count: 26,
-          attendance_percentage: 91.2,
-          pass_percentage: 95.4,
-          placement_percentage: 97.8,
-          student_faculty_ratio: '20:1',
-        },
-        {
-          id: 'dept-002',
-          code: 'ECE',
-          name: 'Electronics & Communication',
-          hod_name: 'Dr. Katherine Johnson',
-          hod_email: 'hod.ece@mit-eng.edu',
-          students_count: 440,
-          faculty_count: 22,
-          attendance_percentage: 86.8,
-          pass_percentage: 92.1,
-          placement_percentage: 93.5,
-          student_faculty_ratio: '20:1',
-        },
-        {
-          id: 'dept-003',
-          code: 'MECH',
-          name: 'Mechanical Engineering',
-          hod_name: 'Dr. Nikola Tesla',
-          hod_email: 'hod.mech@mit-eng.edu',
-          students_count: 380,
-          faculty_count: 20,
-          attendance_percentage: 84.5,
-          pass_percentage: 89.2,
-          placement_percentage: 88.0,
-          student_faculty_ratio: '19:1',
-        },
-        {
-          id: 'dept-004',
-          code: 'CIVIL',
-          name: 'Civil Engineering',
-          hod_name: 'Dr. Arthur Casagrande',
-          hod_email: 'hod.civil@mit-eng.edu',
-          students_count: 320,
-          faculty_count: 18,
-          attendance_percentage: 85.0,
-          pass_percentage: 88.6,
-          placement_percentage: 86.4,
-          student_faculty_ratio: '18:1',
-        },
-        {
-          id: 'dept-005',
-          code: 'IT',
-          name: 'Information Technology',
-          hod_name: 'Dr. Grace Hopper',
-          hod_email: 'hod.it@mit-eng.edu',
-          students_count: 460,
-          faculty_count: 23,
-          attendance_percentage: 89.5,
-          pass_percentage: 94.0,
-          placement_percentage: 96.2,
-          student_faculty_ratio: '20:1',
-        },
-        {
-          id: 'dept-006',
-          code: 'EE',
-          name: 'Electrical Engineering',
-          hod_name: 'Dr. Michael Faraday',
-          hod_email: 'hod.ee@mit-eng.edu',
-          students_count: 330,
-          faculty_count: 17,
-          attendance_percentage: 86.2,
-          pass_percentage: 90.3,
-          placement_percentage: 89.1,
-          student_faculty_ratio: '19:1',
-        },
-      ]);
+    } catch (err) {
+      console.warn('Failed to fetch departments from MySQL', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -136,6 +63,22 @@ export const PrincipalDepartmentsScreen: React.FC = () => {
   const onRefresh = () => {
     setRefreshing(true);
     fetchDepartments();
+  };
+
+  const handleOpenDepartment = async (dept: DepartmentItem) => {
+    setSelectedDept(dept);
+    setModalLoading(true);
+    setModalTab('FACULTY');
+    try {
+      const response = await PrincipalApi.getDepartmentDetails(dept.id);
+      if (response && response.data) {
+        setDeptDetails(response.data);
+      }
+    } catch {
+      setDeptDetails(null);
+    } finally {
+      setModalLoading(false);
+    }
   };
 
   const filteredDepts = departments.filter(
@@ -167,7 +110,7 @@ export const PrincipalDepartmentsScreen: React.FC = () => {
       {loading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Loading departments data...</Text>
+          <Text style={styles.loadingText}>Loading departments from database...</Text>
         </View>
       ) : (
         <ScrollView
@@ -176,84 +119,183 @@ export const PrincipalDepartmentsScreen: React.FC = () => {
         >
           <View style={styles.summaryBar}>
             <Text style={styles.summaryText}>
-              Showing <Text style={styles.summaryBold}>{filteredDepts.length}</Text> active academic departments
+              Showing <Text style={styles.summaryBold}>{filteredDepts.length}</Text> academic departments (Tap card to view faculty & students)
             </Text>
           </View>
 
           {filteredDepts.map((item) => (
-            <Card key={item.id} style={styles.deptCard}>
-              <View style={styles.cardHeader}>
-                <View style={styles.titleArea}>
-                  <Text style={styles.deptName}>{item.name}</Text>
-                  <Text style={styles.hodName}>HOD: {item.hod_name}</Text>
-                </View>
-                <Badge label={item.code} type="primary" />
-              </View>
-
-              <View style={styles.statsGrid}>
-                <View style={styles.statBox}>
-                  <Text style={styles.statLabel}>Students</Text>
-                  <Text style={styles.statValue}>{item.students_count}</Text>
-                </View>
-                <View style={styles.statBox}>
-                  <Text style={styles.statLabel}>Faculty</Text>
-                  <Text style={styles.statValue}>{item.faculty_count}</Text>
-                </View>
-                <View style={styles.statBox}>
-                  <Text style={styles.statLabel}>S:F Ratio</Text>
-                  <Text style={styles.statValue}>{item.student_faculty_ratio}</Text>
-                </View>
-                <View style={styles.statBox}>
-                  <Text style={styles.statLabel}>Placement</Text>
-                  <Text style={[styles.statValue, { color: Colors.accent }]}>{item.placement_percentage}%</Text>
-                </View>
-              </View>
-
-              <View style={styles.metricRow}>
-                <View style={styles.metricItem}>
-                  <View style={styles.metricHeader}>
-                    <Text style={styles.metricTitle}>Attendance Rate</Text>
-                    <Text style={styles.metricPercent}>{item.attendance_percentage}%</Text>
+            <TouchableOpacity
+              key={item.id}
+              activeOpacity={0.9}
+              onPress={() => handleOpenDepartment(item)}
+            >
+              <Card style={styles.deptCard}>
+                <View style={styles.cardHeader}>
+                  <View style={styles.titleArea}>
+                    <Text style={styles.deptName}>{item.name}</Text>
+                    <Text style={styles.hodName}>HOD: {item.hod_name}</Text>
                   </View>
-                  <View style={styles.progressBarBg}>
-                    <View
-                      style={[
-                        styles.progressBarFill,
-                        {
-                          width: `${Math.min(item.attendance_percentage, 100)}%`,
-                          backgroundColor: item.attendance_percentage >= 85 ? Colors.accent : Colors.warning,
-                        },
-                      ]}
-                    />
+                  <Badge label={item.code} type="primary" />
+                </View>
+
+                <View style={styles.statsGrid}>
+                  <View style={styles.statBox}>
+                    <Text style={styles.statLabel}>Students</Text>
+                    <Text style={styles.statValue}>{item.students_count}</Text>
+                  </View>
+                  <View style={styles.statBox}>
+                    <Text style={styles.statLabel}>Faculty</Text>
+                    <Text style={styles.statValue}>{item.faculty_count}</Text>
+                  </View>
+                  <View style={styles.statBox}>
+                    <Text style={styles.statLabel}>S:F Ratio</Text>
+                    <Text style={styles.statValue}>{item.student_faculty_ratio}</Text>
+                  </View>
+                  <View style={styles.statBox}>
+                    <Text style={styles.statLabel}>Placement</Text>
+                    <Text style={[styles.statValue, { color: Colors.accent }]}>{item.placement_percentage}%</Text>
                   </View>
                 </View>
 
-                <View style={[styles.metricItem, { marginTop: 10 }]}>
-                  <View style={styles.metricHeader}>
-                    <Text style={styles.metricTitle}>Semester Pass Rate</Text>
-                    <Text style={styles.metricPercent}>{item.pass_percentage}%</Text>
+                <View style={styles.metricRow}>
+                  <View style={styles.metricItem}>
+                    <View style={styles.metricHeader}>
+                      <Text style={styles.metricTitle}>Attendance Rate</Text>
+                      <Text style={styles.metricPercent}>{item.attendance_percentage}%</Text>
+                    </View>
+                    <View style={styles.progressBarBg}>
+                      <View
+                        style={[
+                          styles.progressBarFill,
+                          {
+                            width: `${Math.min(item.attendance_percentage, 100)}%`,
+                            backgroundColor: item.attendance_percentage >= 85 ? Colors.accent : Colors.warning,
+                          },
+                        ]}
+                      />
+                    </View>
                   </View>
-                  <View style={styles.progressBarBg}>
-                    <View
-                      style={[
-                        styles.progressBarFill,
-                        {
-                          width: `${Math.min(item.pass_percentage, 100)}%`,
-                          backgroundColor: item.pass_percentage >= 90 ? Colors.primary : Colors.warning,
-                        },
-                      ]}
-                    />
+
+                  <View style={[styles.metricItem, { marginTop: 10 }]}>
+                    <View style={styles.metricHeader}>
+                      <Text style={styles.metricTitle}>Semester Pass Rate</Text>
+                      <Text style={styles.metricPercent}>{item.pass_percentage}%</Text>
+                    </View>
+                    <View style={styles.progressBarBg}>
+                      <View
+                        style={[
+                          styles.progressBarFill,
+                          {
+                            width: `${Math.min(item.pass_percentage, 100)}%`,
+                            backgroundColor: item.pass_percentage >= 90 ? Colors.primary : Colors.warning,
+                          },
+                        ]}
+                      />
+                    </View>
                   </View>
                 </View>
-              </View>
 
-              <View style={styles.footerRow}>
-                <Text style={styles.emailText}>✉ {item.hod_email}</Text>
-              </View>
-            </Card>
+                <View style={styles.footerRow}>
+                  <Text style={styles.emailText}>✉ {item.hod_email}</Text>
+                  <Text style={styles.viewDetailsText}>View Faculty & Students →</Text>
+                </View>
+              </Card>
+            </TouchableOpacity>
           ))}
         </ScrollView>
       )}
+
+      {/* Department Detail Modal (Real MySQL Drilldown) */}
+      <Modal
+        visible={!!selectedDept}
+        animationType="slide"
+        onRequestClose={() => setSelectedDept(null)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.modalTitle}>{selectedDept?.name}</Text>
+              <Text style={styles.modalSubtitle}>Department Code: {selectedDept?.code} • HOD: {selectedDept?.hod_name}</Text>
+            </View>
+            <TouchableOpacity style={styles.closeBtn} onPress={() => setSelectedDept(null)}>
+              <Text style={styles.closeBtnText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Modal Tabs */}
+          <View style={styles.modalTabRow}>
+            <TouchableOpacity
+              style={[styles.modalTabItem, modalTab === 'FACULTY' && styles.modalTabItemActive]}
+              onPress={() => setModalTab('FACULTY')}
+            >
+              <Text style={[styles.modalTabText, modalTab === 'FACULTY' && styles.modalTabTextActive]}>
+                👨‍🏫 Faculty Members ({deptDetails?.total_faculty || 0})
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalTabItem, modalTab === 'STUDENTS' && styles.modalTabItemActive]}
+              onPress={() => setModalTab('STUDENTS')}
+            >
+              <Text style={[styles.modalTabText, modalTab === 'STUDENTS' && styles.modalTabTextActive]}>
+                🎓 Enrolled Students ({deptDetails?.total_students || 0})
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {modalLoading ? (
+            <View style={styles.centerContainer}>
+              <ActivityIndicator size="large" color={Colors.primary} />
+              <Text style={styles.loadingText}>Loading department roster from database...</Text>
+            </View>
+          ) : (
+            <ScrollView contentContainerStyle={styles.modalScroll}>
+              {modalTab === 'FACULTY' && (
+                <View>
+                  {deptDetails?.faculty?.length === 0 ? (
+                    <Text style={styles.emptyText}>No faculty members found in this department.</Text>
+                  ) : (
+                    deptDetails?.faculty?.map((fac: any) => (
+                      <Card key={fac.id} style={styles.rosterCard}>
+                        <View style={styles.rosterHeader}>
+                          <Text style={styles.rosterName}>{fac.first_name} {fac.last_name}</Text>
+                          <Badge label={fac.designation || 'Faculty'} type="primary" />
+                        </View>
+                        <Text style={styles.rosterSub}>Emp ID: {fac.employee_id} • {fac.qualification}</Text>
+                        <View style={styles.rosterContactRow}>
+                          <Text style={styles.rosterContact}>✉ {fac.email}</Text>
+                          <Text style={styles.rosterContact}>📞 {fac.mobile}</Text>
+                        </View>
+                      </Card>
+                    ))
+                  )}
+                </View>
+              )}
+
+              {modalTab === 'STUDENTS' && (
+                <View>
+                  {deptDetails?.students?.length === 0 ? (
+                    <Text style={styles.emptyText}>No students registered in this department yet.</Text>
+                  ) : (
+                    deptDetails?.students?.map((stu: any) => (
+                      <Card key={stu.id} style={styles.rosterCard}>
+                        <View style={styles.rosterHeader}>
+                          <Text style={styles.rosterName}>{stu.first_name} {stu.last_name}</Text>
+                          <Badge label={stu.gender} type="info" />
+                        </View>
+                        <Text style={styles.rosterSub}>PRN: {stu.PRN} • Roll: {stu.enrollment_number}</Text>
+                        <View style={styles.rosterContactRow}>
+                          <Text style={styles.rosterContact}>✉ {stu.email}</Text>
+                          <Text style={styles.rosterContact}>📞 {stu.mobile}</Text>
+                        </View>
+                      </Card>
+                    ))
+                  )}
+                </View>
+              )}
+            </ScrollView>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -285,6 +327,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   loadingText: {
     marginTop: 10,
@@ -383,9 +426,120 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   emailText: {
     fontSize: 12,
+    color: Colors.textSecondary,
+  },
+  viewDetailsText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  modalHeader: {
+    backgroundColor: Colors.primary,
+    paddingTop: 45,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    color: '#93C5FD',
+    marginTop: 3,
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10,
+  },
+  closeBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  modalTabRow: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  modalTabItem: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  modalTabItemActive: {
+    borderBottomWidth: 3,
+    borderBottomColor: Colors.primary,
+  },
+  modalTabText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  modalTabTextActive: {
+    color: Colors.primary,
+    fontWeight: '700',
+  },
+  modalScroll: {
+    padding: 12,
+    paddingBottom: 40,
+  },
+  rosterCard: {
+    padding: 14,
+    marginVertical: 6,
+    marginHorizontal: 4,
+  },
+  rosterHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  rosterName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  rosterSub: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 4,
+  },
+  rosterContactRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  rosterContact: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 40,
+    fontSize: 14,
     color: Colors.textSecondary,
   },
 });

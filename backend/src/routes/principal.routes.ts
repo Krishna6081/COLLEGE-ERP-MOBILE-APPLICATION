@@ -12,6 +12,7 @@ router.get('/dashboard', PrincipalController.getDashboard);
 
 // Department Performance & Oversight
 router.get('/departments', PrincipalController.getDepartments);
+router.get('/departments/:id', PrincipalController.getDepartmentDetails);
 
 // Workflow Approvals
 router.get('/approvals', PrincipalController.getApprovals);

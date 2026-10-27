@@ -29,7 +29,20 @@ export class PrincipalController {
   }
 
   /**
-   * Get Workflow Approvals
+   * Get Details of a Specific Department (Faculty & Students List)
+   */
+  static async getDepartmentDetails(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const details = await PrincipalService.getDepartmentDetails(id);
+      return ApiResponse.success(res, 'Department details retrieved', details);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get Workflow Approvals (Leaves, Grievances, Certificates from MySQL)
    */
   static async getApprovals(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
@@ -42,7 +55,7 @@ export class PrincipalController {
   }
 
   /**
-   * Process Workflow Action (Approve / Reject)
+   * Process Workflow Action (Approve / Reject in MySQL)
    */
   static async processApproval(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
@@ -53,7 +66,12 @@ export class PrincipalController {
         return ApiResponse.error(res, 'Action must be either APPROVE or REJECT', 400);
       }
 
-      const result = await PrincipalService.processApproval(id, action, remarks);
+      const result = await PrincipalService.processApproval(
+        id,
+        action,
+        remarks,
+        req.user?.id || 'user-principal'
+      );
       return ApiResponse.success(res, `Request successfully ${action === 'APPROVE' ? 'approved' : 'rejected'}`, result);
     } catch (error) {
       next(error);
@@ -88,7 +106,7 @@ export class PrincipalController {
         content,
         target_audience: target_audience || 'ALL',
         priority: priority || 'HIGH',
-        created_by: req.user?.username || 'Principal',
+        created_by: req.user?.id || 'user-principal',
       });
 
       return ApiResponse.success(res, 'Official notice broadcasted successfully', result, 201);
