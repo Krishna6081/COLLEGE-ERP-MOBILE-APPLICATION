@@ -17,6 +17,7 @@ export interface UserProfile {
   id: string;
   username: string;
   email: string;
+  mobile?: string;
   first_name: string;
   last_name: string;
   user_type: UserRole;

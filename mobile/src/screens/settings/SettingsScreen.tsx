@@ -8,6 +8,7 @@ import {
   Alert,
   Modal,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { Header } from '../../components/Header';
 import { Card } from '../../components/Card';
@@ -62,20 +63,29 @@ export const SettingsScreen: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out from your College ERP account?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await AuthApi.logout();
-          } catch (e) {}
-          await logout();
-        },
-      },
-    ]);
+  const handleLogout = async () => {
+    const doLogout = async () => {
+      try {
+        await AuthApi.logout();
+      } catch (e) {}
+      await logout();
+    };
+
+    if (Platform.OS === 'web') {
+      // Alert.alert button callbacks are a no-op on web; use the browser confirm dialog.
+      if (window.confirm('Are you sure you want to sign out from your College ERP account?')) {
+        await doLogout();
+      }
+    } else {
+      Alert.alert(
+        'Sign Out',
+        'Are you sure you want to sign out from your College ERP account?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign Out', style: 'destructive', onPress: doLogout },
+        ]
+      );
+    }
   };
 
   return (

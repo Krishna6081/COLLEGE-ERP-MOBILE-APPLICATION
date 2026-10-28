@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { UserProfile } from '../types';
 import { StorageService } from '../services/storage.service';
+import { AuthApi } from '../api/auth.api';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -22,6 +23,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (user, accessToken, refreshToken) => {
     await StorageService.setAccessToken(accessToken);
     await StorageService.setRefreshToken(refreshToken);
+    await StorageService.setUserData(user);
     set({
       isAuthenticated: true,
       user,
@@ -46,10 +48,37 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true });
     try {
       const token = await StorageService.getAccessToken();
-      if (token) {
-        // Hydrate state
-        set({ isAuthenticated: true, accessToken: token, isLoading: false });
+      if (!token) {
+        set({ isAuthenticated: false, user: null, accessToken: null, isLoading: false });
+        return;
+      }
+
+      // Restore cached user data from storage first (instant UI)
+      const cachedUser = await StorageService.getUserData<UserProfile>();
+
+      // Try to fetch fresh user profile from server
+      try {
+        const res = await AuthApi.getMe();
+        if (res.success && res.data) {
+          await StorageService.setUserData(res.data);
+          set({
+            isAuthenticated: true,
+            accessToken: token,
+            user: res.data,
+            isLoading: false,
+          });
+          return;
+        }
+      } catch {
+        // Server unreachable or token expired — fall back to cached data
+      }
+
+      if (cachedUser) {
+        // Use cached profile if server is unavailable
+        set({ isAuthenticated: true, accessToken: token, user: cachedUser, isLoading: false });
       } else {
+        // No cached user and can't reach server — clear auth
+        await StorageService.clearAll();
         set({ isAuthenticated: false, user: null, accessToken: null, isLoading: false });
       }
     } catch {
@@ -57,3 +86,4 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 }));
+

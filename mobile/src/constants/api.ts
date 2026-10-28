@@ -18,14 +18,19 @@ const hostFrom = (uri?: string | null): string | undefined => {
  * NativeModules.SourceCode.scriptURL contains the laptop's host IP (e.g. 10.98.161.149:8081).
  */
 const getDevHost = (): string => {
-  const expoHost = hostFrom(Constants.expoConfig?.hostUri);
-  if (expoHost) return expoHost;
+  // On web, hostUri / scriptURL contain the LAN/hotspot IP that the Expo CLI
+  // advertises for physical devices. That address is unreachable from the browser
+  // itself, so we skip those sources entirely and fall through to window.location.
+  if (Platform.OS !== 'web') {
+    const expoHost = hostFrom(Constants.expoConfig?.hostUri);
+    if (expoHost) return expoHost;
 
-  try {
-    const bundleHost = hostFrom(NativeModules.SourceCode?.scriptURL);
-    if (bundleHost) return bundleHost;
-  } catch {
-    // The platform-specific fallback below handles simulator and web builds.
+    try {
+      const bundleHost = hostFrom(NativeModules.SourceCode?.scriptURL);
+      if (bundleHost) return bundleHost;
+    } catch {
+      // The platform-specific fallback below handles simulator builds.
+    }
   }
 
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -42,6 +47,9 @@ const devHost = getDevHost();
 const DEV_API_URL = `http://${devHost}:5000/api/v1`;
 
 export const API_CONFIG = {
-  BASE_URL: process.env.EXPO_PUBLIC_API_URL || DEV_API_URL,
+  // On web: always use the localhost-derived URL — EXPO_PUBLIC_API_URL holds the
+  // hotspot IP for physical devices and is unreachable from a browser on localhost.
+  // On native: prefer EXPO_PUBLIC_API_URL (set in .env for hotspot/LAN access).
+  BASE_URL: Platform.OS === 'web' ? DEV_API_URL : (process.env.EXPO_PUBLIC_API_URL || DEV_API_URL),
   TIMEOUT: 15000,
 };

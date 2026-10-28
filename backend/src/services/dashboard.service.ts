@@ -1,4 +1,4 @@
-﻿import { pool } from '../config/database';
+import { pool } from '../config/database';
 import { AuthorizationError, NotFoundError } from '../utils/errors';
 import { requireCollegeId } from '../utils/tenant';
 const queryRows = async (sql: string, values: any[] = []): Promise<[any[], any]> => {
@@ -77,7 +77,7 @@ export class DashboardService {
             const [todayTt] = await queryRows(`SELECT tt.start_time, tt.end_time, s.name as subject, cr.room_number,
                 CONCAT(f.first_name, ' ', f.last_name) as faculty_name
          FROM timetables tt
-         JOIN subjects s ON tt.subject_id = s.id AND s.college_id = tt.college_id
+         JOIN subjects s ON tt.subject_id = s.id
          JOIN classrooms cr ON tt.classroom_id = cr.id AND cr.college_id = tt.college_id
          JOIN faculty f ON tt.faculty_id = f.id AND f.college_id = tt.college_id
          WHERE tt.college_id = ? AND tt.division_id = ? AND tt.day_of_week = ? AND tt.status = 'ACTIVE'
@@ -86,12 +86,14 @@ export class DashboardService {
             const [upcomingExams] = await queryRows(`SELECT es.exam_date, es.start_time, sub.name as subject_name, e.name as exam_name
          FROM exam_schedules es
          JOIN exams e ON es.exam_id = e.id
-         JOIN subjects sub ON es.subject_id = sub.id AND sub.college_id = e.college_id
+         JOIN subjects sub ON es.subject_id = sub.id
          WHERE e.college_id = ? AND e.semester_id = ? AND es.exam_date >= CURDATE()
          ORDER BY es.exam_date ASC LIMIT 3`, [cid, student.semester_id]);
             // Pending assignments
             const [assignRows] = await queryRows(`SELECT COUNT(*) as count FROM assignments a
-         WHERE a.college_id = ? AND a.division_id = ? AND a.status = 'ACTIVE' AND a.deadline > NOW()
+         JOIN subjects s ON a.subject_id = s.id
+         JOIN departments d ON s.department_id = d.id
+         WHERE d.college_id = ? AND a.division_id = ? AND a.status = 'ACTIVE' AND a.deadline > NOW()
          AND NOT EXISTS (
            SELECT 1 FROM assignment_submissions asub
            WHERE asub.assignment_id = a.id AND asub.student_id = ?
@@ -157,7 +159,7 @@ export class DashboardService {
          JOIN divisions div ON tt.division_id = div.id AND div.semester_id = sem.id
          JOIN courses c ON div.course_id = c.id
          JOIN programs p ON c.program_id = p.id AND p.college_id = tt.college_id
-         JOIN subjects sub ON tt.subject_id = sub.id AND sub.course_id = c.id AND sub.college_id = tt.college_id
+         JOIN subjects sub ON tt.subject_id = sub.id AND sub.course_id = c.id
          JOIN classrooms cr ON tt.classroom_id = cr.id AND cr.college_id = tt.college_id
          WHERE tt.college_id = ? AND tt.faculty_id = ? AND tt.day_of_week = ? AND tt.status = 'ACTIVE'
          ORDER BY tt.start_time`, [cid, faculty.id, todayDay]);
@@ -168,14 +170,15 @@ export class DashboardService {
             // Pending grading
             const [pendingGrading] = await queryRows(`SELECT COUNT(*) as count FROM assignment_submissions asub
          JOIN assignments a ON asub.assignment_id = a.id
-         WHERE a.faculty_id = ? AND a.college_id = ? AND asub.status = 'SUBMITTED'`, [faculty.id, cid]);
+         WHERE a.faculty_id = ? AND asub.status = 'SUBMITTED'`, [faculty.id]);
             // Upcoming exams
             const [upcomingExams] = await queryRows(`SELECT COUNT(*) as count FROM exam_schedules es
          JOIN exams e ON es.exam_id = e.id
          WHERE e.college_id = ? AND e.status = 'SCHEDULED' AND es.exam_date >= CURDATE()`, [cid]);
             // Pending leave requests (for HOD/VP approval)
-            const [pendingLeave] = await queryRows(`SELECT COUNT(*) as count FROM leaves
-         WHERE user_id = ? AND college_id = ? AND status = 'PENDING'`, [userId, cid]);
+            const [pendingLeave] = await queryRows(`SELECT COUNT(*) as count FROM leaves l
+         JOIN leave_types lt ON l.leave_type_id = lt.id
+         WHERE l.user_id = ? AND lt.college_id = ? AND l.status = 'PENDING'`, [userId, cid]);
             // Recent notices
             const [notices] = await queryRows(`SELECT id, title, publish_date, priority FROM notices
          WHERE college_id = ? AND target_audience IN ('ALL', 'FACULTY')
@@ -223,7 +226,9 @@ export class DashboardService {
             const [facCount] = await queryRows(`SELECT COUNT(*) as count FROM faculty WHERE college_id = ? AND department_id = ? AND status = 'ACTIVE'`, [cid, deptId]);
             const [pendingLeaves] = await queryRows(`SELECT COUNT(*) as count FROM leaves l
          JOIN faculty f ON l.user_id = f.user_id
-         WHERE f.college_id = ? AND l.college_id = ? AND f.department_id = ? AND l.status = 'PENDING'`, [cid, cid, deptId]);
+         JOIN leave_types lt ON l.leave_type_id = lt.id
+         WHERE f.college_id = ? AND lt.college_id = ? AND f.department_id = ? AND l.status = 'PENDING'`, [cid, cid, deptId]);
+
             // Department-wide attendance avg
             const [attAvg] = await queryRows(`SELECT ROUND(
            COUNT(CASE WHEN ar.status IN ('PRESENT','LATE') THEN 1 END) * 100.0 / NULLIF(COUNT(ar.id),0)

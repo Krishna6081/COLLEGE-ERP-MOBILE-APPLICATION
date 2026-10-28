@@ -91,7 +91,7 @@ export class StudentService {
       `SELECT f.id, f.college_id
        FROM faculty f
        JOIN faculty_subjects fs ON fs.faculty_id = f.id
-       JOIN divisions d ON d.id = fs.division_id AND d.college_id = f.college_id
+       JOIN divisions d ON d.id = fs.division_id
        WHERE f.user_id = ? AND fs.division_id = ? AND f.status != 'RESIGNED'
        LIMIT 1`,
       [userId, divisionId]

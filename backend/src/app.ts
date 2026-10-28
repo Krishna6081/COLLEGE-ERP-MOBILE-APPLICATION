@@ -12,8 +12,19 @@ import { errorHandler } from './middleware/error.middleware';
 const app = express();
 
 // Security Middlewares
-app.use(helmet());
-app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
+// In development, relax helmet's cross-origin policies so the Expo web
+// dev-server (running on a different port) can reach this API.
+app.use(
+  helmet({
+    crossOriginResourcePolicy: env.NODE_ENV === 'development' ? { policy: 'cross-origin' } : undefined,
+    crossOriginOpenerPolicy: env.NODE_ENV === 'development' ? false : undefined,
+  })
+);
+
+// CORS: use `origin: true` to reflect the requester's origin back.
+// A wildcard '*' combined with `credentials: true` is rejected by browsers.
+const corsOrigin = env.CORS_ORIGIN === '*' ? true : env.CORS_ORIGIN;
+app.use(cors({ origin: corsOrigin, credentials: true }));
 
 // Rate Limiter
 const limiter = rateLimit({

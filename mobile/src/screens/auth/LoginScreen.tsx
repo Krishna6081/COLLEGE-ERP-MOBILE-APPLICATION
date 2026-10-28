@@ -64,14 +64,21 @@ export const LoginScreen: React.FC = () => {
 
     setLoading(true);
     try {
+      console.log('[Login] Attempting login for:', identifier.trim());
       const res = await AuthApi.login(identifier.trim(), password);
+      console.log('[Login] Response received:', JSON.stringify(res, null, 2));
       if (res.success && res.data) {
+        console.log('[Login] Login successful, storing auth data...');
         await loginStore(res.data.user, res.data.accessToken, res.data.refreshToken);
+        console.log('[Login] Auth data stored. isAuthenticated should be true now.');
       } else {
+        console.log('[Login] Login response was not successful:', res.message);
         Alert.alert('Login Failed', res.message || 'Invalid credentials or inactive account.');
       }
     } catch (error: any) {
-      Alert.alert('Login Error', error?.message || 'Could not authenticate. Check network connection.');
+      console.error('[Login] Login error:', error);
+      const errorMessage = error?.message || error?.error?.message || 'Could not authenticate. Check network connection.';
+      Alert.alert('Login Error', errorMessage);
     } finally {
       setLoading(false);
     }

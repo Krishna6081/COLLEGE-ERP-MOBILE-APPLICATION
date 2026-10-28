@@ -62,6 +62,20 @@ export class StorageService {
     return await this.getItem(KEYS.REFRESH_TOKEN);
   }
 
+  static async setUserData(userData: object) {
+    await this.setItem(KEYS.USER_DATA, JSON.stringify(userData));
+  }
+
+  static async getUserData<T = any>(): Promise<T | null> {
+    const raw = await this.getItem(KEYS.USER_DATA);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      return null;
+    }
+  }
+
   static async clearAll() {
     await this.removeItem(KEYS.ACCESS_TOKEN);
     await this.removeItem(KEYS.REFRESH_TOKEN);
