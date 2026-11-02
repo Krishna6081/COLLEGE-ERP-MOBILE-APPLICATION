@@ -11,7 +11,7 @@ export const env = {
     PORT: parseInt(process.env.DATABASE_PORT || '3306', 10),
     NAME: process.env.DATABASE_NAME || 'college_erp_db',
     USER: process.env.DATABASE_USER || 'root',
-    PASSWORD: process.env.DATABASE_PASSWORD || 'root',
+    PASSWORD: process.env.DATABASE_PASSWORD || '',
   },
   JWT: {
     ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || 'default_access_secret_key_2026',
