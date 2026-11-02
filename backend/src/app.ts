@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
-
+import reportsRoutes from './routes/reports.routes';
 import { env } from './config/env';
 import routes from './routes';
 import { errorHandler } from './middleware/error.middleware';
@@ -51,5 +51,6 @@ app.use('/api/v1', routes);
 
 // Centralized Error Handler
 app.use(errorHandler);
+app.use('/api/v1/reports', reportsRoutes);
 
 export default app;

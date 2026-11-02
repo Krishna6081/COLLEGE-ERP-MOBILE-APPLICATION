@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { pool } from '../config/database';
 import { logger } from '../utils/logger';
+import { seedPermissions } from './seed-permissions';
 
 export async function runSeeder() {
   logger.info('Starting College ERP Seeder...');
@@ -93,6 +94,7 @@ export async function runSeeder() {
         m
       );
     }
+    await seedPermissions();
 
     logger.info('Database seeder completed successfully.');
   } catch (error: any) {

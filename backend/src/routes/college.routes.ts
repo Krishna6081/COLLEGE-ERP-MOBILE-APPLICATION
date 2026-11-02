@@ -23,4 +23,19 @@ router.post(
   CollegeController.create
 );
 
+
+ // Update an existing college
+router.put(
+  '/:id',
+  requireRole(['SUPER_ADMIN']),
+  CollegeController.update
+);
+
+// Delete a college
+router.delete(
+  '/:id',
+  requireRole(['SUPER_ADMIN']),
+  CollegeController.delete
+);
+
 export default router;

@@ -1,12 +1,13 @@
-import React from 'react';
+﻿import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text } from 'react-native';
 import { SuperAdminDashboardScreen } from '../screens/dashboard/SuperAdminDashboardScreen';
 import { AddCollegeScreen } from '../screens/super-admin/AddCollegeScreen';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/useAuthStore';
 import { Colors } from '../constants/colors';
-
+import NoticeManagementScreen from '../screens/super-admin/NoticeManagementScreen';
 // Dashboards
 import { StudentDashboardScreen } from '../screens/dashboard/StudentDashboardScreen';
 import { FacultyDashboardScreen } from '../screens/dashboard/FacultyDashboardScreen';
@@ -35,9 +36,24 @@ import { ComplaintsScreen } from '../screens/complaints/ComplaintsScreen';
 import { CertificatesScreen } from '../screens/certificates/CertificatesScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
-
+import ViewAllCollegeScreen from '../screens/super-admin/ViewAllCollegeScreen';
+import EditCollegeScreen from '../screens/super-admin/EditCollegeScreen';
+import UserListScreen from '../screens/super-admin/UserListScreen';
+import AddUserScreen from '../screens/super-admin/AddUserScreen';
+import EditUserScreen from '../screens/super-admin/EditUserScreen';
+import RoleListScreen from '../screens/super-admin/RoleListScreen';
+import AddRoleScreen from '../screens/super-admin/AddRoleScreen';
+import EditRoleScreen from '../screens/super-admin/EditRoleScreen';
+import AssignPermissionsScreen from '../screens/super-admin/AssignPermissionsScreen';
+import AcademicYearScreen from '../screens/super-admin/AcademicYearScreen';
+import SemesterScreen from '../screens/super-admin/SemesterScreen';
+import DepartmentManagementScreen from '../screens/super-admin/DepartmentManagementScreen';
+import CourseManagementScreen from '../screens/super-admin/CourseManagementScreen';
+import SystemMonitoringScreen from '../screens/super-admin/SystemMonitoringScreen';
+import ReportsScreen from '../screens/super-admin/ReportsScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+
 
 function SuperAdminStack() {
   return (
@@ -46,13 +62,90 @@ function SuperAdminStack() {
         name="SuperAdminDashboard"
         component={SuperAdminDashboardScreen}
       />
+
       <Stack.Screen
         name="AddCollege"
         component={AddCollegeScreen}
       />
+
+      <Stack.Screen
+        name="ViewAllColleges"
+        component={ViewAllCollegeScreen}
+      />
+
+      <Stack.Screen
+        name="EditCollege"
+        component={EditCollegeScreen}
+      /> 
+      <Stack.Screen
+        name="UserList"
+        component={UserListScreen}
+      />
+
+      <Stack.Screen
+        name="AddUser"
+        component={AddUserScreen}
+      /> 
+      <Stack.Screen
+        name="EditUser"
+        component={EditUserScreen}
+      />
+      <Stack.Screen
+        name="RoleList"
+        component={RoleListScreen}
+      />
+      <Stack.Screen
+        name="AddRole"
+        component={AddRoleScreen}
+      />
+      <Stack.Screen
+        name="EditRole"
+        component={EditRoleScreen}
+      />
+      <Stack.Screen
+        name="AssignPermissions"
+        component={AssignPermissionsScreen}
+      />
+            <Stack.Screen
+        name="AcademicYear"
+        component={AcademicYearScreen}
+      />
+
+      <Stack.Screen
+        name="SemesterManagement"
+        component={SemesterScreen}
+      />
+
+      <Stack.Screen
+        name="DepartmentManagement"
+        component={DepartmentManagementScreen}
+      />
+
+      <Stack.Screen
+        name="CourseManagement"
+        component={CourseManagementScreen}
+      />
+     
+
+<Stack.Screen
+  name="NoticeManagement"
+  component={NoticeManagementScreen}
+/>
+<Stack.Screen
+  name="SystemMonitoring"
+  component={SystemMonitoringScreen}
+/>
+<Stack.Screen
+  name="Reports"
+  component={ReportsScreen}
+  options={{ title: 'Reports & Analytics' }}
+/>
     </Stack.Navigator>
+    
   );
+
 }
+
 
 function StudentStack() {
   return (
@@ -109,55 +202,73 @@ export const RoleBasedNavigator: React.FC = () => {
     }
   };
 
-  return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textSecondary,
-        tabBarStyle: { height: 60, paddingBottom: 8, paddingTop: 4 },
+    return (
+     <Tab.Navigator
+    screenOptions={{
+      headerShown: false,
+      tabBarActiveTintColor: Colors.primary,
+      tabBarInactiveTintColor: Colors.textSecondary,
+      tabBarStyle: {
+        height: 60,
+        paddingBottom: 8,
+        paddingTop: 4,
+      },
+    }}
+  >
+    <Tab.Screen
+      name="HomeTab"
+      component={getDashboardComponent()}
+      options={{
+        tabBarLabel: 'Dashboard',
+        tabBarIcon: ({ color, size }) => (
+          <Ionicons name="home-outline" size={size} color={color} />
+        ),
       }}
-    >
-      <Tab.Screen
-        name="HomeTab"
-        component={getDashboardComponent()}
-        options={{
-          tabBarLabel: 'Dashboard',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>🏠</Text>,
-        }}
-      />
-      <Tab.Screen
-        name="TimetableTab"
-        component={TimetableScreen}
-        options={{
-          tabBarLabel: 'Timetable',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>📅</Text>,
-        }}
-      />
-      <Tab.Screen
-        name="NoticesTab"
-        component={NoticesScreen}
-        options={{
-          tabBarLabel: 'Notices',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>📢</Text>,
-        }}
-      />
-      <Tab.Screen
-        name="ProfileTab"
-        component={ProfileScreen}
-        options={{
-          tabBarLabel: 'Profile',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>👤</Text>,
-        }}
-      />
-      <Tab.Screen
-        name="SettingsTab"
-        component={SettingsScreen}
-        options={{
-          tabBarLabel: 'Settings',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>⚙️</Text>,
-        }}
-      />
-    </Tab.Navigator>
-  );
+    />
+
+    <Tab.Screen
+      name="TimetableTab"
+      component={TimetableScreen}
+      options={{
+        tabBarLabel: 'Timetable',
+        tabBarIcon: ({ color, size }) => (
+          <Ionicons name="calendar-outline" size={size} color={color} />
+        ),
+      }}
+    />
+
+    <Tab.Screen
+      name="NoticesTab"
+      component={NoticesScreen}
+      options={{
+        tabBarLabel: 'Notices',
+        tabBarIcon: ({ color, size }) => (
+          <Ionicons name="notifications-outline" size={size} color={color} />
+        ),
+      }}
+    />
+
+    <Tab.Screen
+      name="ProfileTab"
+      component={ProfileScreen}
+      options={{
+        tabBarLabel: 'Profile',
+        tabBarIcon: ({ color, size }) => (
+          <Ionicons name="person-outline" size={size} color={color} />
+        ),
+      }}
+    />
+
+    <Tab.Screen
+      name="SettingsTab"
+      component={SettingsScreen}
+      options={{
+        tabBarLabel: 'Settings',
+        tabBarIcon: ({ color, size }) => (
+          <Ionicons name="settings-outline" size={size} color={color} />
+        ),
+      }}
+    />
+  </Tab.Navigator>
+);
 };

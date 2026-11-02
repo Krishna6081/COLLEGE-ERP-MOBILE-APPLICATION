@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import collegeRoutes from './college.routes';
+import academicRoutes from './academic.routes';
 import authRoutes from './auth.routes';
 import studentRoutes from './student.routes';
 import facultyRoutes from './faculty.routes';
@@ -10,9 +11,12 @@ import feeRoutes from './fee.routes';
 import noticeRoutes from './notice.routes';
 import examRoutes from './exam.routes';
 import { complaintRouter, certificateRouter, libraryRouter, placementRouter } from './auxiliary.routes';
-
+import userRoutes from './user.routes';
+import roleRoutes from './role.routes';
+import systemMonitoringRoutes from './systemMonitoring.routes';
 const router = Router();
 router.use('/colleges', collegeRoutes);
+router.use('/academic', academicRoutes);
 
 router.use('/auth', authRoutes);
 router.use('/students', studentRoutes);
@@ -27,5 +31,8 @@ router.use('/complaints', complaintRouter);
 router.use('/certificates', certificateRouter);
 router.use('/library', libraryRouter);
 router.use('/placements', placementRouter);
+router.use('/users', userRoutes);
+router.use('/roles', roleRoutes);
+router.use('/system', systemMonitoringRoutes);
 
 export default router;

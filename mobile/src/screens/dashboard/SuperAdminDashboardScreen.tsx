@@ -1,4 +1,4 @@
-
+﻿
 import React, { useCallback, useState } from 'react';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
@@ -39,13 +39,9 @@ export const SuperAdminDashboardScreen: React.FC = () => {
           setError('');
 
           const response = await DashboardApi.getDashboardData();
-
-          // API response madhun dashboard data ghya.
           const data = response?.data ?? response;
 
-          if (!isActive) {
-            return;
-          }
+          if (!isActive) return;
 
           setStats({
             total_colleges: Number(data?.total_colleges ?? 0),
@@ -60,9 +56,7 @@ export const SuperAdminDashboardScreen: React.FC = () => {
             );
           }
         } finally {
-          if (isActive) {
-            setLoading(false);
-          }
+          if (isActive) setLoading(false);
         }
       };
 
@@ -74,6 +68,28 @@ export const SuperAdminDashboardScreen: React.FC = () => {
     }, [])
   );
 
+  const renderButton = (
+    title: string,
+    screenName: string,
+    primary = false
+  ) => (
+    <TouchableOpacity
+      style={primary ? styles.primaryButton : styles.secondaryButton}
+      onPress={() => navigation.navigate(screenName)}
+      activeOpacity={0.8}
+    >
+      <Text
+        style={
+          primary
+            ? styles.primaryButtonText
+            : styles.secondaryButtonText
+        }
+      >
+        {title}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
       <Header
@@ -81,7 +97,11 @@ export const SuperAdminDashboardScreen: React.FC = () => {
         subtitle="College ERP System Management"
       />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={true}
+      >
         <Text style={styles.welcome}>Welcome, Super Admin!</Text>
 
         <Text style={styles.description}>
@@ -136,15 +156,8 @@ export const SuperAdminDashboardScreen: React.FC = () => {
             Manage college registration and college information.
           </Text>
 
-          <TouchableOpacity
-            style={styles.addCollegeButton}
-            onPress={() => navigation.navigate('AddCollege')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.addCollegeButtonText}>
-              + Add College
-            </Text>
-          </TouchableOpacity>
+          {renderButton('+ Add College', 'AddCollege', true)}
+          {renderButton('View All Colleges', 'ViewAllColleges')}
         </Card>
 
         {/* User Management */}
@@ -154,6 +167,50 @@ export const SuperAdminDashboardScreen: React.FC = () => {
           <Text style={styles.moduleDescription}>
             Manage administrators, faculty and student accounts.
           </Text>
+
+          {renderButton('+ Add User', 'AddUser', true)}
+          {renderButton('View All Users', 'UserList')}
+        </Card>
+
+        {/* Role & Permission Management */}
+        <Card style={styles.moduleCard}>
+          <Text style={styles.moduleTitle}>
+            Role & Permission Management
+          </Text>
+
+          <Text style={styles.moduleDescription}>
+            Manage system and custom roles, configure access
+            permissions, and manage RBAC.
+          </Text>
+
+          {renderButton('+ Add Role', 'AddRole', true)}
+          {renderButton('View All Roles', 'RoleList')}
+        </Card>
+
+        {/* Academic Configuration */}
+        <Card style={styles.moduleCard}>
+          <Text style={styles.moduleTitle}>Academic Configuration</Text>
+
+          <Text style={styles.moduleDescription}>
+            Manage academic years, semesters, departments and courses.
+          </Text>
+
+          {renderButton('Academic Years', 'AcademicYear', true)}
+          {renderButton('Semesters', 'SemesterManagement')}
+          {renderButton('Departments', 'DepartmentManagement')}
+          {renderButton('Courses', 'CourseManagement')}
+        </Card>
+
+        {/* Notice Management */}
+        <Card style={styles.moduleCard}>
+          <Text style={styles.moduleTitle}>Notice Management</Text>
+
+          <Text style={styles.moduleDescription}>
+            Create, edit, publish and manage college announcements
+            and notices.
+          </Text>
+
+          {renderButton('Manage Notices', 'NoticeManagement', true)}
         </Card>
 
         {/* System Monitoring */}
@@ -163,20 +220,38 @@ export const SuperAdminDashboardScreen: React.FC = () => {
           <Text style={styles.moduleDescription}>
             Review system status, reports and overall activity.
           </Text>
+          <TouchableOpacity
+  style={styles.moduleCard}
+  onPress={() => navigation.navigate('SystemMonitoring' as never)}
+>
+  <Text style={styles.moduleTitle}>System Monitoring</Text>
+  <Text style={styles.moduleDescription}>
+    Monitor backend, database, API health and activity logs.
+  </Text>
+  <Text style={{ color: '#0c2466', fontWeight: 'bold', marginTop: 10 }}>
+    View Monitoring →
+  </Text>
+</TouchableOpacity>
         </Card>
 
-        {/* Reports and Analytics */}
-        <Card style={styles.moduleCard}>
-          <Text style={styles.moduleTitle}>Reports &amp; Analytics</Text>
+       
+       {/* Reports & Analytics */}
+<TouchableOpacity
+  activeOpacity={0.7}
+  onPress={() => navigation.navigate('Reports')}
+>
+  <Card style={styles.moduleCard}>
+    <Text style={styles.moduleTitle}>Reports & Analytics</Text>
 
-          <Text style={styles.moduleDescription}>
-            View consolidated reports across colleges.
-          </Text>
-        </Card>
+    <Text style={styles.moduleDescription}>
+      View consolidated reports across colleges.
+    </Text>
+  </Card>
+</TouchableOpacity>
 
-        <Text style={styles.note}>
-          Statistics are loaded from the dashboard API.
-        </Text>
+<Text style={styles.note}>
+  Statistics are loaded from the dashboard API.
+</Text>
       </ScrollView>
     </View>
   );
@@ -188,8 +263,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
 
+  scrollView: {
+    flex: 1,
+  },
+
   scrollContent: {
-    paddingBottom: 24,
+    paddingBottom: 30,
   },
 
   welcome: {
@@ -228,7 +307,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 
-  addCollegeButton: {
+  primaryButton: {
     backgroundColor: Colors.primary,
     paddingVertical: 12,
     borderRadius: 8,
@@ -236,8 +315,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  addCollegeButtonText: {
+  primaryButtonText: {
     color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
+  secondaryButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+
+  secondaryButtonText: {
+    color: Colors.primary,
     fontSize: 15,
     fontWeight: '700',
   },
@@ -267,6 +362,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginHorizontal: 16,
     marginTop: 20,
+    marginBottom: 10,
     textAlign: 'center',
   },
 });

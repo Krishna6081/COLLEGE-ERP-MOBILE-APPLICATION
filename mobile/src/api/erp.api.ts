@@ -1,5 +1,21 @@
 import { apiClient } from './client';
 import { ApiResponse } from '../types';
+export type NoticePayload = {
+  title: string;
+  content: string;
+  target_audience:
+    | 'ALL'
+    | 'STUDENTS'
+    | 'FACULTY'
+    | 'PARENTS'
+    | 'DEPARTMENT';
+  priority?: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+  publish_date: string;
+  expiry_date?: string | null;
+  department_id?: string | null;
+  attachment_url?: string | null;
+  status?: 'DRAFT' | 'PUBLISHED';
+};
 
 export class DashboardApi {
   static async getDashboardData(): Promise<ApiResponse<any>> {
@@ -39,6 +55,29 @@ export class ErpApi {
   static async getNotices(): Promise<ApiResponse<any>> {
     return await apiClient.get('/notices');
   }
+static async createNotice(
+  data: NoticePayload
+): Promise<ApiResponse<any>> {
+  return await apiClient.post('/notices', data);
+}
+
+static async updateNotice(
+  id: string,
+  data: NoticePayload
+): Promise<ApiResponse<any>> {
+  return await apiClient.put(`/notices/${id}`, data);
+}
+  
+  
+  
+
+  static async deleteNotice(id: string): Promise<ApiResponse<any>> {
+    return await apiClient.delete(`/notices/${id}`);
+  }
+
+  static async publishNotice(id: string): Promise<ApiResponse<any>> {
+    return await apiClient.patch(`/notices/${id}/publish`);
+  }
 
   static async getExams(): Promise<ApiResponse<any>> {
     return await apiClient.get('/exams');
@@ -67,11 +106,27 @@ export class ErpApi {
   static async getLibraryBooks(): Promise<ApiResponse<any>> {
     return await apiClient.get('/library/books');
   }
-
   static async getPlacementDrives(): Promise<ApiResponse<any>> {
     return await apiClient.get('/placements/drives');
   }
 }
+
+export const getAllColleges = async () => {
+  try {
+    const response = await apiClient.get('/colleges');
+    console.log('Get colleges response:', response);
+    return response;
+  } catch (error: any) {
+    console.error(
+      'Get colleges failed:',
+      error?.response?.status,
+      error?.response?.data,
+      error?.message
+    );
+    throw error;
+  }
+};
+
 
 export const createCollege = async (collegeData: {
   code: string;
@@ -94,3 +149,19 @@ export const createCollege = async (collegeData: {
     throw error;
   }
 };
+
+export const deleteCollege = async (id: string) => {
+  try {
+    const response = await apiClient.delete(`/colleges/${id}`);
+    return response;
+  } catch (error: any) {
+    console.error(
+      'Delete college failed:',
+      error?.response?.status,
+      error?.response?.data,
+      error?.message
+    );
+    throw error;
+  }
+};
+
