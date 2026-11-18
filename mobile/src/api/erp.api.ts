@@ -28,6 +28,11 @@ export class ErpApi {
     return await apiClient.get('/students', { params });
   }
 
+  
+static async getStudentById(id: string): Promise<ApiResponse<any>> {
+  return await apiClient.get(`/students/${id}`);
+}
+
   static async getFaculty(params?: any): Promise<ApiResponse<any>> {
     return await apiClient.get('/faculty', { params });
   }
@@ -109,6 +114,10 @@ static async updateNotice(
   static async getPlacementDrives(): Promise<ApiResponse<any>> {
     return await apiClient.get('/placements/drives');
   }
+  static async getMyNotices() {
+  const response = await apiClient.get('/notices/my-notices');
+  return response.data;
+}
 }
 
 export const getAllColleges = async () => {
@@ -164,4 +173,6 @@ export const deleteCollege = async (id: string) => {
     throw error;
   }
 };
+
+
 

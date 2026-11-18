@@ -95,40 +95,43 @@ export class StudentService {
     }
   }
 
-  static async getById(id: string) {
-    try {
-      const [rows] = await pool.query<RowDataPacket[]>(
-        `SELECT s.*, d.name as department_name, p.name as program_name, c.name as course_name 
-         FROM students s 
-         LEFT JOIN departments d ON s.department_id = d.id 
-         LEFT JOIN programs p ON s.program_id = p.id 
-         LEFT JOIN courses c ON s.course_id = c.id 
-         WHERE s.id = ?`,
-        [id]
-      );
-      if (!rows.length) throw new NotFoundError('Student not found');
-      return rows[0];
-    } catch (error: any) {
-      if (error instanceof NotFoundError) throw error;
-      return {
-        id,
-        admission_number: 'ADM-2023-001',
-        enrollment_number: 'ENR-2023-1001',
-        PRN: 'PRN20230001',
-        first_name: 'Alex',
-        last_name: 'Johnson',
-        gender: 'MALE',
-        date_of_birth: '2003-05-14',
-        email: 'alex.johnson@student.mit-eng.edu',
-        mobile: '+919900000008',
-        address: '123 Baker Street, Tech City',
-        department_name: 'Computer Science & Engineering',
-        program_name: 'B.Tech Computer Science',
-        course_name: 'Computer Science Core Track',
-        status: 'ACTIVE',
-      };
+  static async getByUserId(userId: string) {
+  try {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT
+        s.*,
+        d.name AS department_name,
+        p.name AS program_name,
+        c.name AS course_name,
+        dv.name AS division_name,
+        sem.name AS semester_name
+      FROM students s
+      LEFT JOIN departments d ON s.department_id = d.id
+      LEFT JOIN programs p ON s.program_id = p.id
+      LEFT JOIN courses c ON s.course_id = c.id
+      LEFT JOIN divisions dv ON s.division_id = dv.id
+      LEFT JOIN semesters sem ON s.semester_id = sem.id
+      WHERE s.user_id = ?`,
+      [userId]
+    );
+
+    if (!rows.length) {
+      throw new NotFoundError('Student profile not found');
     }
+
+    return rows[0];
+
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      throw error;
+    }
+
+    console.error('Get student by user ID error:', error);
+    throw error;
   }
+}
+     
+   
 
   static async create(data: any) {
     const studentId = uuidv4();

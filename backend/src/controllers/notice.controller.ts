@@ -4,212 +4,209 @@ import { randomUUID } from 'crypto';
 import { pool } from '../config/database';
 import { ApiResponse } from '../utils/api-response';
 import { AuthenticatedRequest } from '../models/types';
+import { StudentService } from '../services/student.service';
+
 export class NoticeController {
-  static async getAll(req: Request, res: Response, next: NextFunction) {
+
+  // Get all notices (Admin)
+  static async getAll(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
     try {
-      const [rows]: any = await pool.query(
-        `SELECT id, college_id, title, content, target_audience,
-                department_id, attachment_url, priority, publish_date,
-                expiry_date, created_by, status, created_at, updated_at
-         FROM notices
-         ORDER BY created_at DESC`
+      const [rows] = await pool.query(
+        `SELECT * FROM notices ORDER BY created_at DESC`
       );
 
-      return ApiResponse.success(res, 'Notices fetched successfully', rows);
+      return ApiResponse.success(
+        res,
+        'Notices fetched successfully',
+        rows
+      );
     } catch (error) {
       next(error);
     }
   }
 
-  static async create(req:  AuthenticatedRequest, res: Response, next: NextFunction) {
+  // Create notice (Admin)
+  static async create(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ) {
     try {
       const {
         title,
         content,
-        target_audience = 'ALL',
-        department_id = null,
-        attachment_url = null,
-        priority = 'NORMAL',
+        target_audience,
+        department_id,
+        attachment_url,
+        priority,
         publish_date,
-        expiry_date = null,
-        status = 'DRAFT',
+        expiry_date
       } = req.body;
 
-      // Adjust these property names to match auth.middleware.ts
-     const user = req.user;
-     const collegeId = user?.college_id;
-     const createdBy = user?.id;
+      const collegeId = req.user?.college_id;
+      const createdBy = req.user?.id;
 
-if (!collegeId || !createdBy) {
-  return res.status(400).json({
-    success: false,
-    message: 'User ID and college ID are required to create a notice.',
-  });
-}
       if (!collegeId || !createdBy) {
-        return res.status(401).json({
-          success: false,
-          message: 'Authenticated user college and ID are required.',
-        });
+        throw new Error('User or college information not found');
       }
 
-      if (!title?.trim() || !content?.trim() || !publish_date) {
-        return res.status(400).json({
-          success: false,
-          message: 'Title, content and publish date are required.',
-        });
-      }
-
-      const validAudiences = [
-        'ALL', 'STUDENTS', 'FACULTY', 'PARENTS', 'DEPARTMENT',
-      ];
-      const validPriorities = ['LOW', 'NORMAL', 'HIGH', 'URGENT'];
-      const validStatuses = ['PUBLISHED', 'DRAFT', 'EXPIRED'];
-
-      if (!validAudiences.includes(target_audience)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid target audience.',
-        });
-      }
-
-      if (!validPriorities.includes(priority)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid priority.',
-        });
-      }
-
-      if (!validStatuses.includes(status)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid status.',
-        });
+      if (!title || !content || !publish_date) {
+        return ApiResponse.error(
+          res,
+          'Title, content and publish date are required',
+          400
+        );
       }
 
       const id = randomUUID();
 
       await pool.query(
-        `INSERT INTO notices
-          (id, college_id, title, content, target_audience,
-           department_id, attachment_url, priority, publish_date,
-           expiry_date, created_by, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO notices (
+          id,
+          college_id,
+          title,
+          content,
+          target_audience,
+          department_id,
+          attachment_url,
+          priority,
+          publish_date,
+          expiry_date,
+          created_by,
+          status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
           collegeId,
-          title.trim(),
-          content.trim(),
-          target_audience,
-          department_id,
-          attachment_url,
-          priority,
+          title,
+          content,
+          target_audience || 'ALL',
+          department_id || null,
+          attachment_url || null,
+          priority || 'NORMAL',
           publish_date,
-          expiry_date,
+          expiry_date || null,
           createdBy,
-          status,
+          'PUBLISHED'
         ]
       );
 
-      return res.status(201).json({
-        success: true,
-        message: 'Notice created successfully.',
-        notice: {
-          id,
-          college_id: collegeId,
-          title: title.trim(),
-          content: content.trim(),
-          target_audience,
-          department_id,
-          attachment_url,
-          priority,
-          publish_date,
-          expiry_date,
-          created_by: createdBy,
-          status,
-        },
-      });
+      return ApiResponse.success(
+        res,
+        'Notice created successfully',
+        { id }
+      );
     } catch (error) {
       next(error);
     }
   }
 
-  static async update(req: Request, res: Response, next: NextFunction) {
+  // Update notice (Admin)
+  static async update(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
     try {
       const { id } = req.params;
       const {
         title,
         content,
         target_audience,
-        department_id = null,
-        attachment_url = null,
-        priority = 'NORMAL',
+        department_id,
+        attachment_url,
+        priority,
         publish_date,
-        expiry_date = null,
+        expiry_date,
+        status
       } = req.body;
 
-      if (!title?.trim() || !content?.trim() || !publish_date) {
-        return res.status(400).json({
-          success: false,
-          message: 'Title, content and publish date are required.',
-        });
-      }
-
       const [result]: any = await pool.query(
-        `UPDATE notices
-         SET title = ?, content = ?, target_audience = ?,
-             department_id = ?, attachment_url = ?, priority = ?,
-             publish_date = ?, expiry_date = ?
-         WHERE id = ?`,
+        `UPDATE notices SET
+          title = ?,
+          content = ?,
+          target_audience = ?,
+          department_id = ?,
+          attachment_url = ?,
+          priority = ?,
+          publish_date = ?,
+          expiry_date = ?,
+          status = ?
+        WHERE id = ?`,
         [
-          title.trim(),
-          content.trim(),
-          target_audience || 'ALL',
-          department_id,
-          attachment_url,
+          title,
+          content,
+          target_audience,
+          department_id || null,
+          attachment_url || null,
           priority,
           publish_date,
-          expiry_date,
-          id,
+          expiry_date || null,
+          status,
+          id
         ]
       );
 
       if (result.affectedRows === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Notice not found.',
-        });
+        return ApiResponse.error(
+          res,
+          'Notice not found',
+          404
+        );
       }
 
-      return ApiResponse.success(res, 'Notice updated successfully', { id });
+      return ApiResponse.success(
+        res,
+        'Notice updated successfully',
+        null
+      );
     } catch (error) {
       next(error);
     }
   }
 
-  static async delete(req: Request, res: Response, next: NextFunction) {
+  // Delete notice (Admin)
+  static async delete(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
     try {
       const { id } = req.params;
 
       const [result]: any = await pool.query(
-        'DELETE FROM notices WHERE id = ?',
+        `DELETE FROM notices WHERE id = ?`,
         [id]
       );
 
       if (result.affectedRows === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Notice not found.',
-        });
+        return ApiResponse.error(
+          res,
+          'Notice not found',
+          404
+        );
       }
 
-      return ApiResponse.success(res, 'Notice deleted successfully', { id });
+      return ApiResponse.success(
+        res,
+        'Notice deleted successfully',
+        null
+      );
     } catch (error) {
       next(error);
     }
   }
 
-  static async publish(req: Request, res: Response, next: NextFunction) {
+  // Publish notice (Admin)
+  static async publish(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
     try {
       const { id } = req.params;
 
@@ -221,13 +218,96 @@ if (!collegeId || !createdBy) {
       );
 
       if (result.affectedRows === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Notice not found.',
-        });
+        return ApiResponse.error(
+          res,
+          'Notice not found',
+          404
+        );
       }
 
-      return ApiResponse.success(res, 'Notice published successfully', { id });
+      return ApiResponse.success(
+        res,
+        'Notice published successfully',
+        null
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get notices for logged-in student
+  static async getMyNotices(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      if (!req.user) {
+        return ApiResponse.error(
+          res,
+          'User not authenticated',
+          401
+        );
+      }
+
+      const student = await StudentService.getByUserId(
+        req.user.id
+      );
+
+      if (!student) {
+        return ApiResponse.error(
+          res,
+          'Student details not found',
+          404
+        );
+      }
+
+      const [rows] = await pool.query(
+        `SELECT
+          id,
+          title,
+          content,
+          target_audience,
+          attachment_url,
+          priority,
+          publish_date,
+          expiry_date,
+          created_at
+        FROM notices
+        WHERE college_id = ?
+          AND status = 'PUBLISHED'
+          AND publish_date <= CURDATE()
+          AND (
+            expiry_date IS NULL
+            OR expiry_date >= CURDATE()
+          )
+          AND (
+            target_audience IN ('ALL', 'STUDENTS')
+            OR (
+              target_audience = 'DEPARTMENT'
+              AND department_id = ?
+            )
+          )
+        ORDER BY
+          CASE priority
+            WHEN 'URGENT' THEN 1
+            WHEN 'HIGH' THEN 2
+            WHEN 'NORMAL' THEN 3
+            WHEN 'LOW' THEN 4
+            ELSE 5
+          END,
+          publish_date DESC`,
+        [
+          student.college_id,
+          student.department_id
+        ]
+      );
+
+      return ApiResponse.success(
+        res,
+        'Student notices fetched successfully',
+        rows
+      );
     } catch (error) {
       next(error);
     }

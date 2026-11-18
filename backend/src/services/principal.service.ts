@@ -144,46 +144,85 @@ export class PrincipalService {
   /**
    * List of departments with real-time faculty and student numbers from MySQL
    */
-  static async getDepartmentsOverview(): Promise<DepartmentMetric[]> {
-    const [rows]: any = await pool.query(
-      `SELECT 
-        d.id, 
-        d.code, 
-        d.name, 
-        d.description,
-        COALESCE(CONCAT(hod.first_name, ' ', hod.last_name), 'Dr. Department Head') as hod_name,
-        COALESCE(hod.email, CONCAT('hod.', LOWER(d.code), '@mit-eng.edu')) as hod_email,
-        COUNT(DISTINCT s.id) as students_count,
-        COUNT(DISTINCT f.id) as faculty_count
-       FROM departments d
-       LEFT JOIN faculty f ON f.department_id = d.id AND f.status = 'ACTIVE'
-       LEFT JOIN faculty hod ON hod.department_id = d.id AND hod.designation_id = 'desig-001'
-       LEFT JOIN students s ON s.department_id = d.id AND s.status = 'ACTIVE'
-       WHERE d.status = 'ACTIVE'
-       GROUP BY d.id
-       ORDER BY d.code ASC`
-    );
+  
+static async getDepartmentsOverview(): Promise<DepartmentMetric[]> {
+  const [rows]: any = await pool.query(
+    `SELECT 
+      d.id,
+      d.code,
+      d.name,
 
-    return rows.map((r: any) => {
-      const sCount = Number(r.students_count || 0);
-      const fCount = Number(r.faculty_count || 0);
-      const sfRatio = fCount > 0 ? `${Math.round(sCount / fCount)}:1` : '18:1';
+      COALESCE(
+        MAX(CONCAT(hod.first_name, ' ', hod.last_name)),
+        'Dr. Department Head'
+      ) AS hod_name,
 
-      return {
-        id: r.id,
-        code: r.code,
-        name: r.name,
-        hod_name: r.hod_name,
-        hod_email: r.hod_email,
-        students_count: sCount,
-        faculty_count: fCount,
-        attendance_percentage: r.code === 'CSE' ? 91.2 : r.code === 'IT' ? 89.5 : r.code === 'ECE' ? 86.8 : 85.0,
-        pass_percentage: r.code === 'CSE' ? 95.4 : r.code === 'IT' ? 94.0 : r.code === 'ECE' ? 92.1 : 89.2,
-        placement_percentage: r.code === 'CSE' ? 97.8 : r.code === 'IT' ? 96.2 : r.code === 'ECE' ? 93.5 : 88.0,
-        student_faculty_ratio: sfRatio,
-      };
-    });
-  }
+      COALESCE(
+        MAX(hod.email),
+        CONCAT('hod.', LOWER(d.code), '@mit-eng.edu')
+      ) AS hod_email,
+
+      COUNT(DISTINCT s.id) AS students_count,
+      COUNT(DISTINCT f.id) AS faculty_count
+
+    FROM departments d
+
+    LEFT JOIN faculty f
+      ON f.department_id = d.id
+      AND f.status = 'ACTIVE'
+
+    LEFT JOIN faculty hod
+      ON hod.department_id = d.id
+      AND hod.designation_id = 'desig-001'
+
+    LEFT JOIN students s
+      ON s.department_id = d.id
+      AND s.status = 'ACTIVE'
+
+    WHERE d.status = 'ACTIVE'
+
+    GROUP BY d.id, d.code, d.name
+
+    ORDER BY d.code ASC`
+  );
+
+  return rows.map((r: any) => {
+    const sCount = Number(r.students_count || 0);
+    const fCount = Number(r.faculty_count || 0);
+
+    const sfRatio =
+      fCount > 0 ? `${Math.round(sCount / fCount)}:1` : '18:1';
+
+    return {
+      id: r.id,
+      code: r.code,
+      name: r.name,
+      hod_name: r.hod_name,
+      hod_email: r.hod_email,
+      students_count: sCount,
+      faculty_count: fCount,
+
+      attendance_percentage:
+        r.code === 'CSE' ? 91.2 :
+        r.code === 'IT' ? 89.5 :
+        r.code === 'ECE' ? 86.8 : 85.0,
+
+      pass_percentage:
+        r.code === 'CSE' ? 95.4 :
+        r.code === 'IT' ? 94.0 :
+        r.code === 'ECE' ? 92.1 : 89.2,
+
+      placement_percentage:
+        r.code === 'CSE' ? 97.8 :
+        r.code === 'IT' ? 96.2 :
+        r.code === 'ECE' ? 93.5 : 88.0,
+
+      student_faculty_ratio: sfRatio,
+    };
+  });
+}
+
+  
 
   /**
    * Drill-down: Get detailed faculty and students of a specific department

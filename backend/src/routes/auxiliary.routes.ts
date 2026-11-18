@@ -9,6 +9,7 @@ export const complaintRouter = Router();
 complaintRouter.use(authenticate);
 complaintRouter.get('/', ComplaintController.getAll);
 complaintRouter.post('/', ComplaintController.create);
+complaintRouter.get('/:id', ComplaintController.getById);
 
 export const certificateRouter = Router();
 certificateRouter.use(authenticate);
@@ -24,3 +25,4 @@ export const placementRouter = Router();
 placementRouter.use(authenticate);
 placementRouter.get('/drives', PlacementController.getDrives);
 placementRouter.post('/apply', PlacementController.applyDrive);
+placementRouter.get('/my-applications', PlacementController.getMyApplications);

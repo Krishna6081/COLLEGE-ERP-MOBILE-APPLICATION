@@ -12,14 +12,21 @@ import noticeRoutes from './notice.routes';
 import examRoutes from './exam.routes';
 import principalRoutes from './principal.routes';
 import hodRoutes from './hod.routes';
+import assignmentRoutes from './assignment.routes';
+import leaveRoutes from './leave.routes';
+import eventRoutes from './event.routes';
+import internshipRoutes from './internship.routes';
 import { complaintRouter, certificateRouter, libraryRouter, placementRouter } from './auxiliary.routes';
 import userRoutes from './user.routes';
 import roleRoutes from './role.routes';
 import systemMonitoringRoutes from './systemMonitoring.routes';
+import subjectRoutes from './subject.routes';
+import studyMaterialsRoutes from './studymaterials.routes';
+
+
 const router = Router();
 router.use('/colleges', collegeRoutes);
 router.use('/academic', academicRoutes);
-
 router.use('/auth', authRoutes);
 router.use('/students', studentRoutes);
 router.use('/faculty', facultyRoutes);
@@ -31,6 +38,10 @@ router.use('/notices', noticeRoutes);
 router.use('/exams', examRoutes);
 router.use('/principal', principalRoutes);
 router.use('/hod', hodRoutes);
+router.use('/assignments', assignmentRoutes);
+router.use('/leaves', leaveRoutes);
+router.use('/events', eventRoutes);
+router.use('/internships', internshipRoutes);
 router.use('/complaints', complaintRouter);
 router.use('/certificates', certificateRouter);
 router.use('/library', libraryRouter);
@@ -38,5 +49,6 @@ router.use('/placements', placementRouter);
 router.use('/users', userRoutes);
 router.use('/roles', roleRoutes);
 router.use('/system', systemMonitoringRoutes);
-
+router.use('/subjects', subjectRoutes);
+router.use('/study-materials', studyMaterialsRoutes);
 export default router;

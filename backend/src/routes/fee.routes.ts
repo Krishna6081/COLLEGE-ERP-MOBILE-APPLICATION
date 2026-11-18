@@ -5,7 +5,8 @@ import { authenticate } from '../middleware/auth.middleware';
 const router = Router();
 router.use(authenticate);
 
-router.get('/student/:studentId?', FeeController.getStudentFees);
+router.get('/student', FeeController.getStudentFees);
+router.get('/receipts', FeeController.getPaymentHistory);
 router.post('/pay', FeeController.recordPayment);
 
 export default router;

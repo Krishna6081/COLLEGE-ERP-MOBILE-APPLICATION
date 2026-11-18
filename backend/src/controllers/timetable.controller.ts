@@ -1,3 +1,4 @@
+
 import { Request, Response, NextFunction } from 'express';
 import { TimetableService } from '../services/timetable.service';
 import { ApiResponse } from '../utils/api-response';
@@ -7,8 +8,35 @@ export class TimetableController {
   static async getTimetable(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const { faculty_id, division_id, day_of_week } = req.query as any;
-      const list = await TimetableService.getTimetable({ faculty_id, division_id, day_of_week });
+      const list = await TimetableService.getTimetable({
+        faculty_id,
+        division_id,
+        day_of_week,
+      });
       return ApiResponse.success(res, 'Timetable fetched successfully', list);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getMyTimetable(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not authenticated',
+        });
+      }
+
+      const list = await TimetableService.getMyTimetable(userId);
+
+      return ApiResponse.success(
+        res,
+        'My timetable fetched successfully',
+        list
+      );
     } catch (error) {
       next(error);
     }

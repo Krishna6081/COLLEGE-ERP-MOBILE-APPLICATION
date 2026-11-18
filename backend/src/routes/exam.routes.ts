@@ -6,6 +6,6 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', ExamController.getExams);
-router.get('/results/:studentId?', ExamController.getStudentResults);
+router.get('/results', ExamController.getStudentResults);
 
 export default router;

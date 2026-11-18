@@ -8,6 +8,7 @@ router.use(authenticate);
 
 router.get('/', StudentController.getAll);
 router.post('/', StudentController.create);
-router.get('/:id', StudentController.getById);
+router.get('/my-profile', StudentController.getMyProfile);
+
 
 export default router;

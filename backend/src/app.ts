@@ -8,6 +8,7 @@ import reportsRoutes from './routes/reports.routes';
 import { env } from './config/env';
 import routes from './routes';
 import { errorHandler } from './middleware/error.middleware';
+import timetableRoutes from './routes/timetable.routes';
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.get('/health', (req, res) => {
 
 // API v1 Router
 app.use('/api/v1', routes);
+app.use('/api/v1/timetable', timetableRoutes);
 
 // Centralized Error Handler
 app.use(errorHandler);

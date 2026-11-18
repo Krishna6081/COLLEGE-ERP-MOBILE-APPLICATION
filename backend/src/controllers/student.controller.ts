@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { StudentService } from '../services/student.service';
 import { ApiResponse } from '../utils/api-response';
+import { AuthenticatedRequest } from '../models/types';
 
 export class StudentController {
   static async getAll(req: Request, res: Response, next: NextFunction) {
@@ -18,14 +19,26 @@ export class StudentController {
     }
   }
 
-  static async getById(req: Request, res: Response, next: NextFunction) {
-    try {
-      const student = await StudentService.getById(req.params.id);
-      return ApiResponse.success(res, 'Student fetched successfully', student);
-    } catch (error) {
-      next(error);
-    }
+  static async getMyProfile(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+  if (!req.user) {
+  throw new Error('User not authenticated');
+}
+
+const student = await StudentService.getByUserId(req.user.id);
+    return ApiResponse.success(
+      res,
+      'Student profile fetched successfully',
+      student
+    );
+  } catch (error) {
+    next(error);
   }
+}
 
   static async create(req: Request, res: Response, next: NextFunction) {
     try {

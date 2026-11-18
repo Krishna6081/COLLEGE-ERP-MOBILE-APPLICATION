@@ -67,6 +67,48 @@ export class TimetableService {
       ];
     }
   }
+  
+static async getMyTimetable(userId: string) {
+  const query = `
+    SELECT
+      t.id,
+      t.day_of_week,
+      t.start_time,
+      t.end_time,
+      s.name AS subject_name,
+      s.code AS subject_code,
+      f.first_name AS faculty_first_name,
+      f.last_name AS faculty_last_name,
+      c.room_number,
+      c.building_name,
+      d.name AS division_name
+    FROM students st
+    INNER JOIN timetables t
+      ON st.division_id = t.division_id
+      AND st.college_id = t.college_id
+      AND st.academic_year_id = t.academic_year_id
+      AND st.semester_id = t.semester_id
+    LEFT JOIN subjects s ON t.subject_id = s.id
+    LEFT JOIN faculty f ON t.faculty_id = f.id
+    LEFT JOIN classrooms c ON t.classroom_id = c.id
+    LEFT JOIN divisions d ON t.division_id = d.id
+    WHERE st.user_id = ?
+      AND st.status = 'ACTIVE'
+      AND t.status = 'ACTIVE'
+    ORDER BY
+      FIELD(
+        t.day_of_week,
+        'MONDAY', 'TUESDAY', 'WEDNESDAY',
+        'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'
+      ),
+      t.start_time
+  `;
+
+  const [rows] = await pool.query<RowDataPacket[]>(query, [userId]);
+
+  return rows;
+}
+
 
   static async createTimetable(data: any) {
     const id = uuidv4();

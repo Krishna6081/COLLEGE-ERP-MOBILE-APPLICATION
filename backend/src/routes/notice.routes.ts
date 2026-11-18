@@ -11,5 +11,6 @@ router.post('/', NoticeController.create);
 router.put('/:id', NoticeController.update);
 router.delete('/:id', NoticeController.delete);
 router.patch('/:id/publish', NoticeController.publish);
+router.get('/my-notices', NoticeController.getMyNotices);
 
 export default router;
