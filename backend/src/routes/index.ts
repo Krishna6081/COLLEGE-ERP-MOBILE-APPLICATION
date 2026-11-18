@@ -21,7 +21,7 @@ import userRoutes from './user.routes';
 import roleRoutes from './role.routes';
 import systemMonitoringRoutes from './systemMonitoring.routes';
 import subjectRoutes from './subject.routes';
-import studyMaterialsRoutes from './studymaterials.routes';
+import studyMaterialsRoutes from './studyMaterials.routes';
 
 
 const router = Router();

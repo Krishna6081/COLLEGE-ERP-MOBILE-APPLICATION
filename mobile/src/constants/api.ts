@@ -1,4 +1,4 @@
-const LAN_API_URL = 'http://10.173.204.240:5000/api/v1';
+const LAN_API_URL = 'http://10.181.247.240:5000/api/v1';
 
 export const API_CONFIG = {
   BASE_URL: LAN_API_URL,
