@@ -10,10 +10,14 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
+import { ShieldCheck, KeyRound, Info, LogOut, X, UserCheck } from 'lucide-react-native';
 import { Header } from '../../components/Header';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
+import { Badge } from '../../components/Badge';
+import { PageContent } from '../../components/PageContent';
 import { Colors } from '../../constants/colors';
+import { Shadows } from '../../constants/theme';
 import { useAuthStore } from '../../store/useAuthStore';
 import { AuthApi } from '../../api/auth.api';
 
@@ -21,26 +25,25 @@ export const SettingsScreen: React.FC = () => {
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
 
-  // Change Password state
   const [modalVisible, setModalVisible] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleChangePassword = async () => {
+    setFormError('');
     if (!currentPassword || !newPassword) {
-      Alert.alert('Required Fields', 'Please enter your current password and a new password.');
+      setFormError('Please enter your current password and a new password.');
       return;
     }
-
     if (newPassword.length < 6) {
-      Alert.alert('Invalid Password', 'New password must be at least 6 characters long.');
+      setFormError('New password must be at least 6 characters long.');
       return;
     }
-
     if (newPassword !== confirmPassword) {
-      Alert.alert('Mismatch', 'New password and confirmation do not match.');
+      setFormError('New password and confirmation do not match.');
       return;
     }
 
@@ -48,16 +51,20 @@ export const SettingsScreen: React.FC = () => {
     try {
       const res = await AuthApi.changePassword(currentPassword, newPassword);
       if (res.success) {
-        Alert.alert('Success', 'Your password has been changed successfully.');
         setModalVisible(false);
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
+        if (Platform.OS === 'web') {
+          window.alert('Your password has been changed successfully.');
+        } else {
+          Alert.alert('Success', 'Your password has been changed successfully.');
+        }
       } else {
-        Alert.alert('Failed', res.message || 'Current password was incorrect.');
+        setFormError(res.message || 'Current password was incorrect.');
       }
     } catch (error: any) {
-      Alert.alert('Error', error?.message || 'Could not update password. Please try again.');
+      setFormError(error?.message || 'Could not update password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -67,12 +74,11 @@ export const SettingsScreen: React.FC = () => {
     const doLogout = async () => {
       try {
         await AuthApi.logout();
-      } catch (e) {}
+      } catch {}
       await logout();
     };
 
     if (Platform.OS === 'web') {
-      // Alert.alert button callbacks are a no-op on web; use the browser confirm dialog.
       if (window.confirm('Are you sure you want to sign out from your College ERP account?')) {
         await doLogout();
       }
@@ -90,51 +96,104 @@ export const SettingsScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Header title="Account & Security" subtitle="Preferences & Credential Settings" />
+      <Header title="Account & Security" subtitle="Preferences, Session & Credential Settings" />
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* User Card */}
-        <Card>
-          <Text style={styles.sectionHeader}>Active Session</Text>
-          <Text style={styles.infoTxt}>Logged in as: <Text style={styles.bold}>{user?.username || 'User'}</Text></Text>
-          <Text style={styles.infoTxt}>Role: <Text style={styles.bold}>{user?.user_type || 'Role unavailable'}</Text></Text>
-          <Text style={styles.infoTxt}>College: <Text style={styles.bold}>{user?.college_name || 'College not available'}</Text></Text>
-        </Card>
+        <PageContent>
+          {/* Active Session */}
+          <Card>
+            <View style={styles.cardHeaderRow}>
+              <View style={[styles.iconTile, { backgroundColor: Colors.primaryLight }]}>
+                <UserCheck size={18} color={Colors.primary} strokeWidth={2.2} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sectionHeader}>Active Session</Text>
+                <Text style={styles.sectionSub}>Signed-in identity and workspace scope</Text>
+              </View>
+              <Badge label="ACTIVE" type="success" />
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.kvRow}>
+              <Text style={styles.infoLabel}>Username</Text>
+              <Text style={styles.bold}>{user?.username || 'User'}</Text>
+            </View>
+            <View style={styles.kvRow}>
+              <Text style={styles.infoLabel}>Role</Text>
+              <Badge label={(user?.user_type || 'USER').replace(/_/g, ' ')} type="primary" />
+            </View>
+            <View style={styles.kvRow}>
+              <Text style={styles.infoLabel}>College</Text>
+              <Text style={styles.bold}>{user?.college_name || 'College not available'}</Text>
+            </View>
+          </Card>
 
-        {/* Security Settings */}
-        <Card>
-          <Text style={styles.sectionHeader}>Security & Credentials</Text>
-          <Text style={styles.descTxt}>
-            Passwords must never be shared and are securely hashed using bcrypt.
-          </Text>
-          <Button
-            title="CHANGE PASSWORD"
-            variant="outline"
-            onPress={() => setModalVisible(true)}
-            style={{ marginTop: 8 }}
-          />
-        </Card>
+          {/* Security Settings */}
+          <Card>
+            <View style={styles.cardHeaderRow}>
+              <View style={[styles.iconTile, { backgroundColor: Colors.accentLight }]}>
+                <ShieldCheck size={18} color={Colors.accentDark} strokeWidth={2.2} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sectionHeader}>Security & Credentials</Text>
+                <Text style={styles.sectionSub}>Password management and session encryption</Text>
+              </View>
+            </View>
+            <Text style={styles.descTxt}>
+              Passwords are securely hashed with bcrypt and never stored in plain text. Update your password regularly to keep your account safe.
+            </Text>
+            <Button
+              title="CHANGE PASSWORD"
+              variant="outline"
+              icon={<KeyRound size={15} color={Colors.primary} strokeWidth={2.2} />}
+              onPress={() => { setFormError(''); setModalVisible(true); }}
+              style={{ marginTop: 8 }}
+            />
+          </Card>
 
-        {/* Application Version */}
-        <Card>
-          <Text style={styles.sectionHeader}>Application Information</Text>
-          <Text style={styles.infoTxt}>Platform: College ERP Mobile v1.0.0</Text>
-          <Text style={styles.infoTxt}>Security: JWT Bearer + Refresh Token + RBAC</Text>
-          <Text style={styles.infoTxt}>Backend: Node.js Express MySQL API</Text>
-        </Card>
+          {/* Application Info */}
+          <Card>
+            <View style={styles.cardHeaderRow}>
+              <View style={[styles.iconTile, { backgroundColor: Colors.secondaryLight }]}>
+                <Info size={18} color={Colors.secondary} strokeWidth={2.2} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sectionHeader}>Application Information</Text>
+                <Text style={styles.sectionSub}>Platform & architecture details</Text>
+              </View>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.kvRow}>
+              <Text style={styles.infoLabel}>Platform</Text>
+              <Text style={styles.bold}>College ERP Suite v1.0.0</Text>
+            </View>
+            <View style={styles.kvRow}>
+              <Text style={styles.infoLabel}>Security</Text>
+              <Text style={styles.bold}>JWT Bearer + Refresh Token + RBAC</Text>
+            </View>
+            <View style={styles.kvRow}>
+              <Text style={styles.infoLabel}>Backend API</Text>
+              <Text style={styles.bold}>Node.js · Express · MySQL</Text>
+            </View>
+          </Card>
 
-        <View style={styles.logoutWrapper}>
-          <Button title="LOGOUT FROM ACCOUNT" variant="danger" onPress={handleLogout} />
-        </View>
+          <View style={styles.logoutWrapper}>
+            <Button
+              title="SIGN OUT OF ACCOUNT"
+              variant="danger"
+              icon={<LogOut size={15} color="#FFFFFF" strokeWidth={2.2} />}
+              onPress={handleLogout}
+            />
+          </View>
+        </PageContent>
       </ScrollView>
 
       {/* Change Password Modal */}
-      <Modal visible={modalVisible} transparent animationType="slide">
+      <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Change Password</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text style={styles.modalClose}>✕</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
+                <X size={18} color={Colors.textSecondary} strokeWidth={2.2} />
               </TouchableOpacity>
             </View>
 
@@ -144,7 +203,7 @@ export const SettingsScreen: React.FC = () => {
               value={currentPassword}
               onChangeText={setCurrentPassword}
               placeholder="Enter current password"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={Colors.textMuted}
               secureTextEntry
             />
 
@@ -154,7 +213,7 @@ export const SettingsScreen: React.FC = () => {
               value={newPassword}
               onChangeText={setNewPassword}
               placeholder="Enter new secure password"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={Colors.textMuted}
               secureTextEntry
             />
 
@@ -164,15 +223,17 @@ export const SettingsScreen: React.FC = () => {
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               placeholder="Re-enter new password"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={Colors.textMuted}
               secureTextEntry
             />
+
+            {!!formError && <Text style={styles.errorTxt}>{formError}</Text>}
 
             <Button
               title="UPDATE PASSWORD"
               onPress={handleChangePassword}
               loading={loading}
-              style={{ marginTop: 20 }}
+              style={{ marginTop: 18 }}
             />
           </View>
         </View>
@@ -183,23 +244,43 @@ export const SettingsScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  scroll: { paddingBottom: 24 },
-  sectionHeader: { fontSize: 16, fontWeight: '800', color: Colors.textPrimary, marginBottom: 8 },
-  infoTxt: { fontSize: 13, color: Colors.textSecondary, marginVertical: 3 },
-  bold: { fontWeight: '700', color: Colors.textPrimary },
-  descTxt: { fontSize: 13, color: Colors.textSecondary, marginBottom: 10, lineHeight: 18 },
-  logoutWrapper: { paddingHorizontal: 16, marginTop: 16 },
+  scroll: { paddingVertical: 10, paddingBottom: 32 },
+  cardHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  iconTile: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionHeader: { fontSize: 15, fontWeight: '800', color: Colors.textPrimary },
+  sectionSub: { fontSize: 12, color: Colors.textSecondary, marginTop: 1 },
+  divider: { height: 1, backgroundColor: Colors.borderLight, marginVertical: 12 },
+  kvRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+    gap: 12,
+  },
+  infoLabel: { fontSize: 13, color: Colors.textSecondary, fontWeight: '600' },
+  bold: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary, flexShrink: 1, textAlign: 'right' },
+  descTxt: { fontSize: 13, color: Colors.textSecondary, marginTop: 12, marginBottom: 6, lineHeight: 20 },
+  logoutWrapper: { paddingHorizontal: 16, marginTop: 12 },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
     justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
   },
   modalCard: {
-    backgroundColor: '#FFFFFF',
+    width: '100%',
+    maxWidth: 440,
+    backgroundColor: Colors.cardBg,
     borderRadius: 20,
-    padding: 22,
-    elevation: 8,
+    padding: 24,
+    ...Shadows.lg,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -207,32 +288,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.textPrimary,
-  },
-  modalClose: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.textSecondary,
-    padding: 4,
-  },
+  modalTitle: { fontSize: 18, fontWeight: '800', color: Colors.textPrimary },
+  closeBtn: { padding: 4 },
   inputLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: Colors.textPrimary,
     marginBottom: 6,
-    marginTop: 10,
+    marginTop: 12,
   },
   input: {
-    height: 48,
+    height: 46,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
-    fontSize: 15,
+    fontSize: 14,
     color: Colors.textPrimary,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: Colors.background,
   },
+  errorTxt: { color: Colors.danger, fontSize: 12, fontWeight: '600', marginTop: 10 },
 });

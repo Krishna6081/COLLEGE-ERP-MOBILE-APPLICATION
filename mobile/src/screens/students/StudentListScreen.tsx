@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Search } from 'lucide-react-native';
 import { Header } from '../../components/Header';
 import { Card } from '../../components/Card';
 import { Badge } from '../../components/Badge';
+import { Button } from '../../components/Button';
+import { EmptyState } from '../../components/EmptyState';
+import { PageContent } from '../../components/PageContent';
 import { Colors } from '../../constants/colors';
 import { ErpApi } from '../../api/erp.api';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -66,63 +70,80 @@ export const StudentListScreen: React.FC<{ navigation: any; route?: any }> = ({ 
         title={isFaculty ? 'Assigned Class Roster' : 'Student Directory'}
         subtitle={isFaculty ? 'Students in your assigned class' : 'Students in your authorized scope'}
       />
-      <View style={styles.searchBox}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder={isFaculty ? 'Search by name or PRN...' : 'Search by name, ADM, PRN...'}
-          value={search}
-          onChangeText={handleSearchChange}
-        />
-      </View>
-      {loading ? <ActivityIndicator style={{ flex: 1 }} color={Colors.primary} size="large" /> : loadError ? (
-        <Card style={styles.errorCard}>
-          <Text style={styles.errorText}>{loadError}</Text>
-          {divisionId ? <Button title="RETRY" onPress={() => loadStudents()} /> : null}
-          {!divisionId && isFaculty ? <Button title="BACK TO SCHEDULE" variant="outline" onPress={() => navigation.goBack()} /> : null}
-        </Card>
-      ) : <FlatList
-        data={students}
-        keyExtractor={(item) => String(item.id)}
-        ListEmptyComponent={<Text style={styles.empty}>No students found</Text>}
-        renderItem={({ item }) => (
-          isFaculty ? (
-            <Card>
-              <View style={styles.row}>
-                <View>
-                  <Text style={styles.name}>{item.first_name} {item.last_name}</Text>
-                  <Text style={styles.sub}>PRN: {item.PRN}</Text>
-                </View>
-              </View>
-            </Card>
-          ) : (
-            <TouchableOpacity onPress={() => navigation.navigate('StudentDetail', { id: item.id })}>
+      <PageContent style={{ flex: 1 }}>
+        <View style={styles.searchBox}>
+          <View style={styles.searchField}>
+            <Search size={17} color={Colors.textMuted} strokeWidth={2.2} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder={isFaculty ? 'Search by name or PRN...' : 'Search by name, ADM, PRN...'}
+              placeholderTextColor={Colors.textMuted}
+              value={search}
+              onChangeText={handleSearchChange}
+            />
+          </View>
+        </View>
+        {loading ? <ActivityIndicator style={{ flex: 1 }} color={Colors.primary} size="large" /> : loadError ? (
+          <Card style={styles.errorCard}>
+            <Text style={styles.errorText}>{loadError}</Text>
+            {divisionId ? <Button title="RETRY" onPress={() => loadStudents()} /> : null}
+            {!divisionId && isFaculty ? <Button title="BACK TO SCHEDULE" variant="outline" onPress={() => navigation.goBack()} /> : null}
+          </Card>
+        ) : <FlatList
+          data={students}
+          keyExtractor={(item) => String(item.id)}
+          contentContainerStyle={{ paddingBottom: 24 }}
+          ListEmptyComponent={<EmptyState title="No students found" message="Try adjusting your search query." />}
+          renderItem={({ item }) => (
+            isFaculty ? (
               <Card>
                 <View style={styles.row}>
                   <View>
                     <Text style={styles.name}>{item.first_name} {item.last_name}</Text>
-                    <Text style={styles.sub}>ADM: {item.admission_number} | PRN: {item.PRN}</Text>
-                    <Text style={styles.dept}>{item.department_name}</Text>
+                    <Text style={styles.sub}>PRN: {item.PRN}</Text>
                   </View>
-                  <Badge label={item.status} type="success" />
                 </View>
               </Card>
-            </TouchableOpacity>
-          )
-        )}
-      />}
+            ) : (
+              <TouchableOpacity onPress={() => navigation.navigate('StudentDetail', { id: item.id })}>
+                <Card>
+                  <View style={styles.row}>
+                    <View>
+                      <Text style={styles.name}>{item.first_name} {item.last_name}</Text>
+                      <Text style={styles.sub}>ADM: {item.admission_number} | PRN: {item.PRN}</Text>
+                      <Text style={styles.dept}>{item.department_name}</Text>
+                    </View>
+                    <Badge label={item.status} type="success" />
+                  </View>
+                </Card>
+              </TouchableOpacity>
+            )
+          )}
+        />}
+      </PageContent>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  searchBox: { padding: 14 },
-  searchInput: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: Colors.border, borderRadius: 12, paddingHorizontal: 14, height: 44 },
+  searchBox: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 6 },
+  searchField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: Colors.cardBg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 46,
+  },
+  searchInput: { flex: 1, fontSize: 14, color: Colors.textPrimary },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   name: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
   sub: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  dept: { fontSize: 13, color: Colors.primary, marginTop: 4, fontWeight: '500' },
-  empty: { padding: 24, color: Colors.textSecondary, textAlign: 'center' },
+  dept: { fontSize: 13, color: Colors.primary, marginTop: 4, fontWeight: '600' },
   errorCard: { margin: 16 },
   errorText: { color: Colors.danger, textAlign: 'center', marginBottom: 8 },
 });

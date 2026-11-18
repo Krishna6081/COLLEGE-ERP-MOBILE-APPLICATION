@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
+import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { Colors } from '../constants/colors';
+import { Radii, Shadows } from '../constants/theme';
 
 interface CardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export const Card: React.FC<CardProps> = ({ children, style }) => {
@@ -14,16 +15,12 @@ export const Card: React.FC<CardProps> = ({ children, style }) => {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.cardBg,
-    borderRadius: 16,
-    padding: 16,
-    marginVertical: 8,
+    borderRadius: Radii.lg,
+    padding: 18,
+    marginVertical: 7,
     marginHorizontal: 16,
     borderWidth: 1,
     borderColor: Colors.border,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    ...Shadows.sm,
   },
 });

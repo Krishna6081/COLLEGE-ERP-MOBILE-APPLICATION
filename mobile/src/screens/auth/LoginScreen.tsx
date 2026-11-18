@@ -11,7 +11,16 @@ import {
   Platform,
   Modal,
 } from 'react-native';
+import {
+  GraduationCap,
+  KeyRound,
+  Smartphone,
+  Eye,
+  EyeOff,
+  AlertCircle,
+} from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
+import { Shadows, webGradient, webInteractive } from '../../constants/theme';
 import { Button } from '../../components/Button';
 import { AuthApi } from '../../api/auth.api';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -23,6 +32,7 @@ export const LoginScreen: React.FC = () => {
   const [identifier, setIdentifier] = useState(__DEV__ ? 'student_alex' : '');
   const [password, setPassword] = useState(__DEV__ ? 'password123' : '');
   const [showPassword, setShowPassword] = useState(false);
+  const [authError, setAuthError] = useState('');
 
   // OTP Login states
   const [otpIdentifier, setOtpIdentifier] = useState(__DEV__ ? '+919900000008' : '');
@@ -57,27 +67,27 @@ export const LoginScreen: React.FC = () => {
    * 1. Password Login (Email, Username, or Mobile + Password)
    */
   const handlePasswordLogin = async () => {
+    setAuthError('');
     if (!identifier.trim() || !password) {
-      Alert.alert('Required Fields', 'Please enter your Username / Email / Mobile and password.');
+      const msg = 'Please enter your Username / Email / Mobile and password.';
+      setAuthError(msg);
+      Alert.alert('Required Fields', msg);
       return;
     }
 
     setLoading(true);
     try {
-      console.log('[Login] Attempting login for:', identifier.trim());
       const res = await AuthApi.login(identifier.trim(), password);
-      console.log('[Login] Response received:', JSON.stringify(res, null, 2));
       if (res.success && res.data) {
-        console.log('[Login] Login successful, storing auth data...');
         await loginStore(res.data.user, res.data.accessToken, res.data.refreshToken);
-        console.log('[Login] Auth data stored. isAuthenticated should be true now.');
       } else {
-        console.log('[Login] Login response was not successful:', res.message);
-        Alert.alert('Login Failed', res.message || 'Invalid credentials or inactive account.');
+        const msg = res.message || 'Invalid credentials or inactive account.';
+        setAuthError(msg);
+        Alert.alert('Login Failed', msg);
       }
     } catch (error: any) {
-      console.error('[Login] Login error:', error);
       const errorMessage = error?.message || error?.error?.message || 'Could not authenticate. Check network connection.';
+      setAuthError(errorMessage);
       Alert.alert('Login Error', errorMessage);
     } finally {
       setLoading(false);
@@ -192,60 +202,80 @@ export const LoginScreen: React.FC = () => {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={[styles.container, webGradient('#0F172A', '#1E1B4B', 145)]}
+    >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        {/* Header Branding */}
-        <View style={styles.headerBox}>
-          <View style={styles.badgeWrap}>
-            <Text style={styles.badgeText}>COLLEGE ERP</Text>
-          </View>
-          <Text style={styles.collegeName}>College Management Portal</Text>
-          <Text style={styles.appTitle}>Enterprise ERP Portal</Text>
-          <Text style={styles.subtitle}>Role-Based Academic & Administrative Management</Text>
-        </View>
-
-        {/* Auth Card */}
-        <View style={styles.formCard}>
-          {/* Tab Switcher */}
-          <View style={styles.tabContainer}>
-            <TouchableOpacity
-              style={[styles.tabBtn, activeTab === 'PASSWORD' && styles.tabBtnActive]}
-              onPress={() => setActiveTab('PASSWORD')}
-            >
-              <Text style={[styles.tabBtnText, activeTab === 'PASSWORD' && styles.tabBtnTextActive]}>
-                🔑 Password Login
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.tabBtn, activeTab === 'OTP' && styles.tabBtnActive]}
-              onPress={() => setActiveTab('OTP')}
-            >
-              <Text style={[styles.tabBtnText, activeTab === 'OTP' && styles.tabBtnTextActive]}>
-                📱 OTP Login
-              </Text>
-            </TouchableOpacity>
+        <View style={styles.authShell}>
+          {/* Header Branding */}
+          <View style={styles.headerBox}>
+            <View style={[styles.logoTile, webGradient(Colors.primary, Colors.secondary, 135)]}>
+              <GraduationCap size={28} color="#FFFFFF" strokeWidth={2.2} />
+            </View>
+            <View style={styles.badgeWrap}>
+              <Text style={styles.badgeText}>COLLEGE ERP SUITE</Text>
+            </View>
+            <Text style={styles.appTitle}>Welcome Back</Text>
+            <Text style={styles.subtitle}>Sign in to your role-based academic & campus portal</Text>
           </View>
 
-          {/* PASSWORD TAB CONTENT */}
-          {activeTab === 'PASSWORD' && (
-            <View>
-              <Text style={styles.inputLabel}>Email / Username / Mobile Number</Text>
-              <TextInput
-                style={styles.input}
-                value={identifier}
-                onChangeText={setIdentifier}
-                placeholder="Enter your username, email, or phone number"
-                placeholderTextColor="#94A3B8"
-                autoCapitalize="none"
-              />
+          {/* Auth Card */}
+          <View style={styles.formCard}>
+            {/* Tab Switcher */}
+            <View style={styles.tabContainer}>
+              <TouchableOpacity
+                style={[styles.tabBtn, activeTab === 'PASSWORD' && styles.tabBtnActive, webInteractive]}
+                onPress={() => { setActiveTab('PASSWORD'); setAuthError(''); }}
+              >
+                <KeyRound size={15} color={activeTab === 'PASSWORD' ? Colors.primary : Colors.textSecondary} strokeWidth={2.2} />
+                <Text style={[styles.tabBtnText, activeTab === 'PASSWORD' && styles.tabBtnTextActive]}>
+                  Password
+                </Text>
+              </TouchableOpacity>
 
-              <View style={styles.labelRow}>
-                <Text style={styles.inputLabel}>Password</Text>
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  <Text style={styles.showHideText}>{showPassword ? 'Hide' : 'Show'}</Text>
-                </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tabBtn, activeTab === 'OTP' && styles.tabBtnActive, webInteractive]}
+                onPress={() => { setActiveTab('OTP'); setAuthError(''); }}
+              >
+                <Smartphone size={15} color={activeTab === 'OTP' ? Colors.primary : Colors.textSecondary} strokeWidth={2.2} />
+                <Text style={[styles.tabBtnText, activeTab === 'OTP' && styles.tabBtnTextActive]}>
+                  OTP Login
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {!!authError && (
+              <View style={styles.errorBanner}>
+                <AlertCircle size={16} color={Colors.danger} strokeWidth={2.2} />
+                <Text style={styles.errorBannerText}>{authError}</Text>
               </View>
+            )}
+
+            {/* PASSWORD TAB CONTENT */}
+            {activeTab === 'PASSWORD' && (
+              <View>
+                <Text style={styles.inputLabel}>Email, Username, or Mobile</Text>
+                <TextInput
+                  style={styles.input}
+                  value={identifier}
+                  onChangeText={(v) => { setIdentifier(v); setAuthError(''); }}
+                  placeholder="Enter your username, email, or phone number"
+                  placeholderTextColor="#94A3B8"
+                  autoCapitalize="none"
+                />
+
+                <View style={styles.labelRow}>
+                  <Text style={styles.inputLabel}>Password</Text>
+                  <TouchableOpacity style={styles.eyeToggle} onPress={() => setShowPassword(!showPassword)}>
+                    {showPassword ? (
+                      <EyeOff size={14} color={Colors.primary} strokeWidth={2.2} />
+                    ) : (
+                      <Eye size={14} color={Colors.primary} strokeWidth={2.2} />
+                    )}
+                    <Text style={styles.showHideText}>{showPassword ? 'Hide' : 'Show'}</Text>
+                  </TouchableOpacity>
+                </View>
 
               <TextInput
                 style={styles.input}
@@ -426,6 +456,7 @@ export const LoginScreen: React.FC = () => {
             </View>
           </View>
         </Modal>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -434,29 +465,44 @@ export const LoginScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A', // Dark Slate Blue background for a striking premium feel
+    backgroundColor: '#0F172A',
   },
   scrollContent: {
     padding: 20,
     justifyContent: 'center',
+    alignItems: 'center',
     minHeight: '100%',
+  },
+  authShell: {
+    width: '100%',
+    maxWidth: 460,
+    alignSelf: 'center',
   },
   headerBox: {
     alignItems: 'center',
     marginBottom: 24,
-    marginTop: 20,
+    marginTop: 12,
+  },
+  logoTile: {
+    width: 58,
+    height: 58,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+    ...Shadows.lg,
   },
   badgeWrap: {
-    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 20,
+    backgroundColor: 'rgba(79, 70, 229, 0.22)',
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#3B82F6',
-    marginBottom: 8,
+    borderColor: 'rgba(129, 140, 248, 0.45)',
+    marginBottom: 10,
   },
   badgeText: {
-    color: '#93C5FD',
+    color: '#C7D2FE',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1.5,
@@ -464,52 +510,51 @@ const styles = StyleSheet.create({
   collegeName: {
     color: '#E2E8F0',
     fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: 1.2,
+    fontWeight: '700',
+    letterSpacing: 1,
   },
   appTitle: {
     color: '#FFFFFF',
-    fontSize: 26,
-    fontWeight: '900',
-    marginTop: 4,
+    fontSize: 28,
+    fontWeight: '800',
+    marginTop: 2,
     textAlign: 'center',
+    letterSpacing: -0.5,
   },
   subtitle: {
     color: '#94A3B8',
-    fontSize: 13,
-    marginTop: 4,
+    fontSize: 14,
+    marginTop: 6,
     textAlign: 'center',
+    lineHeight: 20,
   },
   formCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 22,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
+    borderRadius: 22,
+    padding: 26,
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.9)',
+    ...Shadows.lg,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: Colors.surface,
     borderRadius: 12,
     padding: 4,
     marginBottom: 18,
   },
   tabBtn: {
     flex: 1,
-    paddingVertical: 10,
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
     borderRadius: 10,
   },
   tabBtnActive: {
     backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    ...Shadows.sm,
   },
   tabBtnText: {
     fontSize: 13,
@@ -518,6 +563,24 @@ const styles = StyleSheet.create({
   },
   tabBtnTextActive: {
     color: Colors.primary,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.dangerLight,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  errorBannerText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#B91C1C',
+    fontWeight: '600',
   },
   inputLabel: {
     fontSize: 13,
@@ -530,6 +593,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  eyeToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 10,
   },
   showHideText: {
     fontSize: 12,

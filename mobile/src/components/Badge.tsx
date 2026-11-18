@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Colors } from '../constants/colors';
 
 interface BadgeProps {
   label?: string;
@@ -15,39 +16,52 @@ export const Badge: React.FC<BadgeProps> = ({ label, text, type, variant }) => {
   const getStyles = () => {
     switch (badgeType) {
       case 'success':
-        return { bg: '#DCFCE7', text: '#15803D' };
+        return { bg: '#ECFDF5', border: '#A7F3D0', text: '#047857', dot: '#10B981' };
       case 'warning':
-        return { bg: '#FEF3C7', text: '#B45309' };
+        return { bg: '#FFFBEB', border: '#FDE68A', text: '#B45309', dot: '#F59E0B' };
       case 'danger':
-        return { bg: '#FEE2E2', text: '#B91C1C' };
+        return { bg: '#FEF2F2', border: '#FECACA', text: '#B91C1C', dot: '#EF4444' };
       case 'info':
-        return { bg: '#E0F2FE', text: '#0369A1' };
+        return { bg: '#F0FDFA', border: '#99F6E4', text: '#0F766E', dot: Colors.accent };
       case 'neutral':
-        return { bg: '#F1F5F9', text: '#64748B' };
+        return { bg: '#F1F5F9', border: '#E2E8F0', text: '#475569', dot: '#94A3B8' };
       default:
-        return { bg: '#DBEAFE', text: '#1D4ED8' };
+        return { bg: Colors.primaryLight, border: Colors.primarySoft, text: Colors.primary, dot: Colors.primary };
     }
   };
 
-  const style = getStyles();
+  const s = getStyles();
 
   return (
-    <View style={[styles.badge, { backgroundColor: style.bg }]}>
-      <Text style={[styles.text, { color: style.text }]}>{badgeText}</Text>
+    <View style={[styles.badge, { backgroundColor: s.bg, borderColor: s.border }]}>
+      <View style={[styles.dot, { backgroundColor: s.dot }]} />
+      <Text style={[styles.text, { color: s.text }]} numberOfLines={1}>
+        {badgeText}
+      </Text>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 999,
+    borderWidth: 1,
     alignSelf: 'flex-start',
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   text: {
     fontSize: 11,
     fontWeight: '700',
+    letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
 });

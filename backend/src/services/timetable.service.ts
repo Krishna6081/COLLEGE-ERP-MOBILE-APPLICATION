@@ -24,7 +24,7 @@ export class TimetableService {
     }
 
     let query = `
-      SELECT DISTINCT t.*, s.name as subject_name, s.code as subject_code,
+      SELECT DISTINCT t.*, s.name as subject_name, s.code as subject_code, s.subject_type,
              f.first_name as faculty_first_name, f.last_name as faculty_last_name,
              c.room_number, c.building_name, d.name as division_name
       FROM timetables t
@@ -189,5 +189,61 @@ export class TimetableService {
     } finally {
       conn.release();
     }
+  }
+
+  static async getCalendarEvents(params: {
+    college_id?: string | null;
+    month?: number;
+    year?: number;
+    event_type?: string;
+  }) {
+    const college_id = requireCollegeId(params.college_id);
+    let query = `
+      SELECT id, college_id, title, description, event_type, start_date, end_date, is_all_day
+      FROM calendar_events
+      WHERE college_id = ?
+    `;
+    const queryParams: any[] = [college_id];
+
+    if (params.event_type) {
+      query += ` AND event_type = ?`;
+      queryParams.push(params.event_type);
+    }
+
+    if (params.year && params.month) {
+      const monthStr = String(params.month).padStart(2, '0');
+      const monthStart = `${params.year}-${monthStr}-01 00:00:00`;
+      const lastDay = new Date(params.year, params.month, 0).getDate();
+      const monthEnd = `${params.year}-${monthStr}-${String(lastDay).padStart(2, '0')} 23:59:59`;
+      query += ` AND start_date <= ? AND end_date >= ?`;
+      queryParams.push(monthEnd, monthStart);
+    }
+
+    query += ` ORDER BY start_date ASC`;
+    const [rows] = await pool.query<RowDataPacket[]>(query, queryParams);
+    return rows;
+  }
+
+  static async createCalendarEvent(data: {
+    title: string;
+    description?: string;
+    event_type?: string;
+    start_date: string;
+    end_date: string;
+    is_all_day?: boolean | number;
+  }, collegeId: string) {
+    const college_id = requireCollegeId(collegeId);
+    if (!data.title || !data.start_date || !data.end_date) {
+      throw new ValidationError('Title, start_date, and end_date are required');
+    }
+    const allowedTypes = ['ACADEMIC', 'EXAM', 'HOLIDAY', 'EVENT', 'DEADLINE'];
+    const eventType = data.event_type && allowedTypes.includes(data.event_type) ? data.event_type : 'EVENT';
+    const id = uuidv4();
+    await pool.query(
+      `INSERT INTO calendar_events (id, college_id, title, description, event_type, start_date, end_date, is_all_day)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, college_id, data.title, data.description || null, eventType, data.start_date, data.end_date, data.is_all_day ? 1 : 0]
+    );
+    return { id, college_id, ...data, event_type: eventType, is_all_day: data.is_all_day ? 1 : 0 };
   }
 }

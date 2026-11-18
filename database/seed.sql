@@ -164,7 +164,7 @@ SELECT 'role-002', id FROM permissions WHERE code IN (
   'exams.view','exams.manage','exams.marks.review',
   'results.view','results.publish',
   'fees.view','fees.manage','fees.payment.record','fees.reports',
-  'library.view','library.manage','library.issue',
+  'library.view','library.manage','library.issue','library.self.view',
   'placements.view','placements.manage','placements.reports',
   'notices.view','notices.create','notices.manage',
   'events.view','events.manage',
@@ -318,7 +318,7 @@ INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT 'role-010', id FROM permissions WHERE code IN (
   'users.self.view','users.self.update',
   'students.view',
-  'library.view','library.manage','library.issue',
+  'library.view','library.manage','library.issue','library.self.view',
   'notices.view',
   'events.view',
   'reports.view',
@@ -494,11 +494,13 @@ INSERT IGNORE INTO `student_parents` (`student_id`, `parent_id`, `is_primary`) V
 -- 16. SUBJECTS
 -- ============================================================
 INSERT IGNORE INTO `subjects` (`id`, `course_id`, `department_id`, `code`, `name`, `subject_type`, `credits`, `total_hours`) VALUES
-('sub-001', 'course-001', 'dept-001', 'CS501', 'Database Management Systems', 'THEORY',    4, 45),
-('sub-002', 'course-001', 'dept-001', 'CS502', 'Web Application Engineering', 'THEORY',    4, 45),
-('sub-003', 'course-001', 'dept-001', 'CS503', 'DBMS Laboratory',             'PRACTICAL', 2, 30),
-('sub-004', 'course-001', 'dept-001', 'CS504', 'Data Structures & Algorithms','THEORY',    4, 45),
-('sub-005', 'course-001', 'dept-001', 'CS505', 'Operating Systems',            'THEORY',    3, 45);
+('sub-001', 'course-001', 'dept-001', 'CS501', 'Database Management Systems',  'THEORY',    4, 45),
+('sub-002', 'course-001', 'dept-001', 'CS502', 'Web Application Engineering',  'THEORY',    4, 45),
+('sub-003', 'course-001', 'dept-001', 'CS503', 'DBMS Laboratory',              'PRACTICAL', 2, 30),
+('sub-004', 'course-001', 'dept-001', 'CS504', 'Data Structures & Algorithms', 'THEORY',    4, 45),
+('sub-005', 'course-001', 'dept-001', 'CS505', 'Operating Systems',            'THEORY',    3, 45),
+('sub-006', 'course-001', 'dept-001', 'CS506', 'Computer Networks',            'THEORY',    3, 45),
+('sub-007', 'course-001', 'dept-001', 'CS507', 'Web & Full-Stack Lab',         'PRACTICAL', 2, 30);
 
 -- Faculty Subject Assignments
 INSERT IGNORE INTO `faculty_subjects` (`id`, `faculty_id`, `subject_id`, `division_id`, `academic_year_id`, `semester_id`) VALUES
@@ -506,30 +508,45 @@ INSERT IGNORE INTO `faculty_subjects` (`id`, `faculty_id`, `subject_id`, `divisi
 ('fs-002', 'fac-003', 'sub-002', 'div-001', 'ay-001', 'sem-001'),
 ('fs-003', 'fac-002', 'sub-003', 'div-001', 'ay-001', 'sem-001'),
 ('fs-004', 'fac-001', 'sub-004', 'div-001', 'ay-001', 'sem-001'),
-('fs-005', 'fac-003', 'sub-005', 'div-001', 'ay-001', 'sem-001');
+('fs-005', 'fac-003', 'sub-005', 'div-001', 'ay-001', 'sem-001'),
+('fs-006', 'fac-001', 'sub-006', 'div-001', 'ay-001', 'sem-001'),
+('fs-007', 'fac-003', 'sub-007', 'div-001', 'ay-001', 'sem-001');
 
 -- ============================================================
 -- 17. CLASSROOMS
 -- ============================================================
 INSERT IGNORE INTO `classrooms` (`id`, `college_id`, `room_number`, `building_name`, `room_type`, `capacity`) VALUES
-('room-101', 'col-001', 'LH-101', 'Main Academic Block', 'LECTURE_HALL', 60),
-('room-102', 'col-001', 'LH-102', 'Main Academic Block', 'LECTURE_HALL', 60),
-('room-lab1','col-001', 'LAB-201', 'IT Block',           'LAB',          35);
+('room-101',  'col-001', 'LH-101',  'Main Academic Block', 'LECTURE_HALL', 60),
+('room-102',  'col-001', 'LH-102',  'Main Academic Block', 'LECTURE_HALL', 60),
+('room-lab1', 'col-001', 'LAB-201', 'IT Block',            'LAB',          35),
+('room-lab2', 'col-001', 'LAB-202', 'IT Block',            'LAB',          35);
 
 -- ============================================================
--- 18. TIMETABLES
+-- 18. TIMETABLES (Full Weekly Schedule: MON - SAT)
 -- ============================================================
 INSERT IGNORE INTO `timetables` (`id`, `college_id`, `academic_year_id`, `semester_id`, `division_id`, `subject_id`, `faculty_id`, `classroom_id`, `day_of_week`, `start_time`, `end_time`) VALUES
-('tt-001', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-001', 'fac-002', 'room-101', 'MONDAY',    '09:00:00', '10:00:00'),
-('tt-002', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-002', 'fac-003', 'room-101', 'MONDAY',    '10:00:00', '11:00:00'),
-('tt-003', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-003', 'fac-002', 'room-lab1','MONDAY',    '11:30:00', '13:30:00'),
-('tt-004', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-004', 'fac-001', 'room-101', 'TUESDAY',   '09:00:00', '10:00:00'),
-('tt-005', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-005', 'fac-003', 'room-101', 'TUESDAY',   '10:00:00', '11:00:00'),
-('tt-006', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-001', 'fac-002', 'room-101', 'WEDNESDAY', '09:00:00', '10:00:00'),
-('tt-007', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-002', 'fac-003', 'room-101', 'WEDNESDAY', '10:00:00', '11:00:00'),
-('tt-008', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-004', 'fac-001', 'room-101', 'THURSDAY',  '09:00:00', '10:00:00'),
-('tt-009', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-005', 'fac-003', 'room-101', 'THURSDAY',  '10:00:00', '11:00:00'),
-('tt-010', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-003', 'fac-002', 'room-lab1','FRIDAY',    '09:00:00', '11:00:00');
+('tt-001', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-001', 'fac-002', 'room-101',  'MONDAY',    '09:00:00', '10:00:00'),
+('tt-002', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-002', 'fac-003', 'room-101',  'MONDAY',    '10:00:00', '11:00:00'),
+('tt-003', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-004', 'fac-001', 'room-102',  'MONDAY',    '11:15:00', '12:15:00'),
+('tt-004', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-003', 'fac-002', 'room-lab1', 'MONDAY',    '13:30:00', '15:30:00'),
+('tt-005', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-004', 'fac-001', 'room-101',  'TUESDAY',   '09:00:00', '10:00:00'),
+('tt-006', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-005', 'fac-003', 'room-101',  'TUESDAY',   '10:00:00', '11:00:00'),
+('tt-007', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-006', 'fac-001', 'room-102',  'TUESDAY',   '11:15:00', '12:15:00'),
+('tt-008', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-001', 'fac-002', 'room-101',  'TUESDAY',   '13:30:00', '14:30:00'),
+('tt-009', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-001', 'fac-002', 'room-101',  'WEDNESDAY', '09:00:00', '10:00:00'),
+('tt-010', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-002', 'fac-003', 'room-101',  'WEDNESDAY', '10:00:00', '11:00:00'),
+('tt-011', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-006', 'fac-001', 'room-102',  'WEDNESDAY', '11:15:00', '12:15:00'),
+('tt-012', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-007', 'fac-003', 'room-lab2', 'WEDNESDAY', '13:30:00', '15:30:00'),
+('tt-013', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-004', 'fac-001', 'room-101',  'THURSDAY',  '09:00:00', '10:00:00'),
+('tt-014', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-005', 'fac-003', 'room-101',  'THURSDAY',  '10:00:00', '11:00:00'),
+('tt-015', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-001', 'fac-002', 'room-102',  'THURSDAY',  '11:15:00', '12:15:00'),
+('tt-016', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-002', 'fac-003', 'room-101',  'THURSDAY',  '13:30:00', '14:30:00'),
+('tt-017', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-006', 'fac-001', 'room-101',  'FRIDAY',    '09:00:00', '10:00:00'),
+('tt-018', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-005', 'fac-003', 'room-101',  'FRIDAY',    '10:00:00', '11:00:00'),
+('tt-019', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-003', 'fac-002', 'room-lab1', 'FRIDAY',    '11:15:00', '13:15:00'),
+('tt-020', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-004', 'fac-001', 'room-102',  'FRIDAY',    '14:15:00', '15:15:00'),
+('tt-021', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-002', 'fac-003', 'room-101',  'SATURDAY',  '09:30:00', '10:30:00'),
+('tt-022', 'col-001', 'ay-001', 'sem-001', 'div-001', 'sub-007', 'fac-003', 'room-lab2', 'SATURDAY',  '10:45:00', '12:45:00');
 
 -- ============================================================
 -- 19. ATTENDANCE SAMPLE DATA
@@ -574,34 +591,81 @@ INSERT IGNORE INTO `events` (`id`, `college_id`, `title`, `description`, `catego
 -- 21. BOOKS & LIBRARY
 -- ============================================================
 INSERT IGNORE INTO `book_categories` (`id`, `college_id`, `name`, `description`) VALUES
-('cat-001', 'col-001', 'Computer Science & IT',   'Technical textbooks for CS/IT'),
-('cat-002', 'col-001', 'Electronics & Comm.',      'ECE textbooks'),
-('cat-003', 'col-001', 'Mathematics',               'Math reference books'),
-('cat-004', 'col-001', 'General & Fiction',          'General reading');
+('cat-001', 'col-001', 'Computer Science & IT',   'Technical textbooks, programming, algorithms, networks, and systems'),
+('cat-002', 'col-001', 'Electronics & Comm.',      'Circuits, signals, VLSI, microprocessors, and embedded systems'),
+('cat-003', 'col-001', 'Mathematics & Sciences',   'Engineering mathematics, calculus, linear algebra, physics, and chemistry'),
+('cat-004', 'col-001', 'Mechanical & Civil',       'Mechanics, thermodynamics, structural engineering, and materials'),
+('cat-005', 'col-001', 'Management & Humanities',  'Project management, technical communication, and professional ethics'),
+('cat-006', 'col-001', 'AI & Data Science',        'Artificial intelligence, machine learning, deep learning, and data analytics'),
+('cat-007', 'col-001', 'Pharmacy & Medical',       'Pharmacology, pharmaceutics, medicinal chemistry, and pharmacognosy');
 
-INSERT IGNORE INTO `books` (`id`, `college_id`, `category_id`, `title`, `author`, `ISBN`, `publisher`, `total_copies`, `available_copies`) VALUES
-('book-001', 'col-001', 'cat-001', 'Database System Concepts',                'Silberschatz, Korth, Sudarshan',   '9780073523323', 'McGraw-Hill',  10, 8),
-('book-002', 'col-001', 'cat-001', 'Introduction to Algorithms (CLRS)',        'Cormen, Leiserson, Rivest, Stein',  '9780262033848', 'MIT Press',    8,  6),
-('book-003', 'col-001', 'cat-001', 'Computer Networks',                         'Andrew S. Tanenbaum',              '9780132126953', 'Pearson',      6,  5),
-('book-004', 'col-001', 'cat-003', 'Higher Engineering Mathematics',            'B.S. Grewal',                      '9789382332541', 'Khanna Pub.',  12, 10);
+INSERT IGNORE INTO `books` (`id`, `college_id`, `category_id`, `title`, `author`, `ISBN`, `publisher`, `edition`, `shelf_location`, `total_copies`, `available_copies`, `status`) VALUES
+('book-001', 'col-001', 'cat-001', 'Database System Concepts',                                      'Abraham Silberschatz, Henry F. Korth, S. Sudarshan',            '9780073523323', 'McGraw-Hill',              '7th Edition',  'Rack CS-01', 10, 10, 'AVAILABLE'),
+('book-002', 'col-001', 'cat-001', 'Introduction to Algorithms (CLRS)',                             'Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, Clifford Stein', '9780262033848', 'MIT Press',      '4th Edition',  'Rack CS-02', 12, 11, 'AVAILABLE'),
+('book-003', 'col-001', 'cat-001', 'Computer Networks: A Systems Approach',                         'Andrew S. Tanenbaum, David J. Wetherall',                       '9780132126953', 'Pearson',                  '5th Edition',  'Rack CS-03',  8,  8, 'AVAILABLE'),
+('book-004', 'col-001', 'cat-001', 'Operating System Concepts',                                     'Abraham Silberschatz, Peter B. Galvin, Greg Gagne',             '9781119800361', 'Wiley',                    '10th Edition', 'Rack CS-04', 10, 10, 'AVAILABLE'),
+('book-005', 'col-001', 'cat-001', 'Clean Code: A Handbook of Agile Software Craftsmanship',        'Robert C. Martin (Uncle Bob)',                                  '9780132350884', 'Prentice Hall',            '1st Edition',  'Rack CS-05',  6,  6, 'AVAILABLE'),
+('book-006', 'col-001', 'cat-001', 'Design Patterns: Elements of Reusable Object-Oriented Software','Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides',      '9780201633610', 'Addison-Wesley',           '1st Edition',  'Rack CS-05',  8,  7, 'AVAILABLE'),
+('book-007', 'col-001', 'cat-006', 'Artificial Intelligence: A Modern Approach',                    'Stuart Russell, Peter Norvig',                                  '9780136042594', 'Pearson',                  '4th Edition',  'Rack AI-01', 10,  9, 'AVAILABLE'),
+('book-008', 'col-001', 'cat-006', 'Deep Learning',                                                 'Ian Goodfellow, Yoshua Bengio, Aaron Courville',                '9780262035613', 'MIT Press',                '1st Edition',  'Rack AI-02',  6,  6, 'AVAILABLE'),
+('book-009', 'col-001', 'cat-001', 'Python Crash Course: A Hands-On, Project-Based Introduction',   'Eric Matthes',                                                  '9781593279288', 'No Starch Press',          '3rd Edition',  'Rack CS-06', 15, 14, 'AVAILABLE'),
+('book-010', 'col-001', 'cat-001', 'Compilers: Principles, Techniques, and Tools (Dragon Book)',    'Alfred V. Aho, Monica S. Lam, Ravi Sethi, Jeffrey D. Ullman',   '9780321486813', 'Pearson',                  '2nd Edition',  'Rack CS-07',  7,  7, 'AVAILABLE'),
+('book-011', 'col-001', 'cat-002', 'Microelectronic Circuits: Theory and Applications',             'Adel S. Sedra, Kenneth C. Smith',                               '9780199339136', 'Oxford University Press',  '7th Edition',  'Rack EC-01', 10, 10, 'AVAILABLE'),
+('book-012', 'col-001', 'cat-002', 'Signals and Systems',                                           'Alan V. Oppenheim, Alan S. Willsky, S. Hamid Nawab',            '9780138147570', 'Prentice Hall',            '2nd Edition',  'Rack EC-02',  8,  8, 'AVAILABLE'),
+('book-013', 'col-001', 'cat-002', 'Digital Design: With an Introduction to the Verilog HDL',       'M. Morris Mano, Michael D. Ciletti',                            '9780132774208', 'Pearson',                  '5th Edition',  'Rack EC-03', 10, 10, 'AVAILABLE'),
+('book-014', 'col-001', 'cat-002', 'The Art of Electronics',                                        'Paul Horowitz, Winfield Hill',                                  '9780521809269', 'Cambridge University Press','3rd Edition', 'Rack EC-04',  5,  5, 'AVAILABLE'),
+('book-015', 'col-001', 'cat-003', 'Higher Engineering Mathematics',                                'B.S. Grewal',                                                   '9789382332541', 'Khanna Publishers',        '44th Edition', 'Rack MA-01', 14, 14, 'AVAILABLE'),
+('book-016', 'col-001', 'cat-003', 'Advanced Engineering Mathematics',                              'Erwin Kreyszig',                                                '9780470458365', 'Wiley',                    '10th Edition', 'Rack MA-02', 10, 10, 'AVAILABLE'),
+('book-017', 'col-001', 'cat-003', 'Probability and Statistics for Engineers and Scientists',       'Ronald E. Walpole, Raymond H. Myers, Sharon L. Myers',          '9780321629111', 'Pearson',                  '9th Edition',  'Rack MA-03',  8,  8, 'AVAILABLE'),
+('book-018', 'col-001', 'cat-003', 'University Physics with Modern Physics',                        'Hugh D. Young, Roger A. Freedman',                              '9780135159553', 'Pearson',                  '15th Edition', 'Rack SC-01',  6,  6, 'AVAILABLE'),
+('book-019', 'col-001', 'cat-004', 'Vector Mechanics for Engineers: Statics and Dynamics',          'Ferdinand P. Beer, E. Russell Johnston Jr.',                    '9780073398136', 'McGraw-Hill',              '11th Edition', 'Rack ME-01',  8,  8, 'AVAILABLE'),
+('book-020', 'col-001', 'cat-004', 'Fundamentals of Thermodynamics',                                'Claus Borgnakke, Richard E. Sonntag',                           '9780470041925', 'Wiley',                    '8th Edition',  'Rack ME-02',  7,  7, 'AVAILABLE'),
+('book-021', 'col-001', 'cat-004', 'Strength of Materials',                                         'S. Ramamrutham, R. Narayanan',                                  '9789384378271', 'Dhanpat Rai Publishing',   '16th Edition', 'Rack ME-03',  9,  9, 'AVAILABLE'),
+('book-022', 'col-001', 'cat-005', 'Principles of Management',                                      'Harold Koontz, Heinz Weihrich',                                 '9780070147287', 'McGraw-Hill',              '10th Edition', 'Rack MG-01',  6,  6, 'AVAILABLE'),
+('book-023', 'col-001', 'cat-005', 'Effective Technical Communication',                             'M. Ashraf Rizvi',                                               '9780070599529', 'Tata McGraw-Hill',         '2nd Edition',  'Rack MG-02',  8,  8, 'AVAILABLE'),
+('book-024', 'col-001', 'cat-007', 'Goodman and Gilman''s The Pharmacological Basis of Therapeutics','Laurence L. Brunton, Bruce A. Chabner, Bjorn C. Knollmann',     '9780071624428', 'McGraw-Hill Education',    '13th Edition', 'Rack PH-01',  6,  6, 'AVAILABLE'),
+('book-025', 'col-001', 'cat-007', 'Essentials of Medical Pharmacology',                            'K.D. Tripathi',                                                 '9789350259375', 'Jaypee Brothers',          '8th Edition',  'Rack PH-02', 10, 10, 'AVAILABLE');
 
--- Book issue sample for student
-INSERT IGNORE INTO `book_issues` (`id`, `book_id`, `user_id`, `issue_date`, `due_date`, `status`) VALUES
-('bi-001', 'book-001', 'user-student1', '2026-10-01', '2026-10-15', 'ISSUED');
+-- Book issue history records for students (Alex Johnson & Emma Watson)
+INSERT IGNORE INTO `book_issues` (`id`, `book_id`, `user_id`, `issue_date`, `due_date`, `return_date`, `fine_amount`, `status`) VALUES
+('bi-001', 'book-001', 'user-student1', '2026-07-15', '2026-07-29', '2026-07-28',  0.00, 'RETURNED'),
+('bi-002', 'book-002', 'user-student1', '2026-08-10', '2026-08-24', '2026-08-27', 15.00, 'RETURNED'),
+('bi-003', 'book-003', 'user-student1', '2026-09-02', '2026-09-16', '2026-09-15',  0.00, 'RETURNED'),
+('bi-004', 'book-005', 'user-student1', '2026-10-01', '2026-10-15', '2026-10-14',  0.00, 'RETURNED'),
+('bi-005', 'book-007', 'user-student1', '2026-10-15', '2026-10-29', NULL,         95.00, 'OVERDUE'),
+('bi-006', 'book-009', 'user-student1', '2026-11-08', '2026-11-22', NULL,          0.00, 'ISSUED'),
+('bi-007', 'book-015', 'user-student2', '2026-08-01', '2026-08-15', '2026-08-14',  0.00, 'RETURNED'),
+('bi-008', 'book-013', 'user-student2', '2026-08-20', '2026-09-03', '2026-09-08', 25.00, 'RETURNED'),
+('bi-009', 'book-004', 'user-student2', '2026-09-12', '2026-09-26', '2026-09-25',  0.00, 'RETURNED'),
+('bi-010', 'book-002', 'user-student2', '2026-10-12', '2026-10-26', NULL,        110.00, 'OVERDUE'),
+('bi-011', 'book-006', 'user-student2', '2026-11-10', '2026-11-24', NULL,          0.00, 'ISSUED');
 
 -- ============================================================
--- 22. FEE STRUCTURES & STUDENT FEES
+-- 22. FEE STRUCTURES, STUDENT FEES & FEE PAYMENTS
 -- ============================================================
 INSERT IGNORE INTO `fee_structures` (`id`, `college_id`, `academic_year_id`, `program_id`, `semester_id`, `fee_head`, `amount`, `due_date`) VALUES
 ('fs-001', 'col-001', 'ay-001', 'prog-001', 'sem-001', 'Tuition Fee Semester 5',     50000.00, '2026-11-30'),
-('fs-002', 'col-001', 'ay-001', 'prog-001', 'sem-001', 'Library Fee',                  1000.00, '2026-11-30'),
-('fs-003', 'col-001', 'ay-001', 'prog-001', 'sem-001', 'Development Fund',              2500.00, '2026-11-30');
+('fs-002', 'col-001', 'ay-001', 'prog-001', 'sem-001', 'Library & Laboratory Fee',    5000.00, '2026-11-10'),
+('fs-003', 'col-001', 'ay-001', 'prog-001', 'sem-001', 'Development & Sports Fund',   4500.00, '2026-10-31'),
+('fs-004', 'col-001', 'ay-001', 'prog-001', 'sem-001', 'Semester 5 Examination Fee',  3500.00, '2026-11-25');
 
 INSERT IGNORE INTO `student_fees` (`id`, `student_id`, `fee_structure_id`, `original_amount`, `discount_amount`, `net_amount`, `paid_amount`, `due_amount`, `status`) VALUES
 ('sf-001', 'stud-001', 'fs-001', 50000.00, 5000.00, 45000.00, 20000.00, 25000.00, 'PARTIAL'),
-('sf-002', 'stud-002', 'fs-001', 50000.00, 0.00,    50000.00, 50000.00,     0.00, 'PAID'),
-('sf-003', 'stud-001', 'fs-002',  1000.00, 0.00,     1000.00,  1000.00,     0.00, 'PAID'),
-('sf-004', 'stud-002', 'fs-002',  1000.00, 0.00,     1000.00,  1000.00,     0.00, 'PAID');
+('sf-002', 'stud-002', 'fs-001', 50000.00,    0.00, 50000.00, 50000.00,     0.00, 'PAID'),
+('sf-003', 'stud-001', 'fs-002',  5000.00,    0.00,  5000.00,  5000.00,     0.00, 'PAID'),
+('sf-004', 'stud-002', 'fs-002',  5000.00,    0.00,  5000.00,  5000.00,     0.00, 'PAID'),
+('sf-005', 'stud-001', 'fs-003',  4500.00,    0.00,  4500.00,     0.00,  4500.00, 'OVERDUE'),
+('sf-006', 'stud-002', 'fs-003',  4500.00,    0.00,  4500.00,  4500.00,     0.00, 'PAID'),
+('sf-007', 'stud-001', 'fs-004',  3500.00,    0.00,  3500.00,     0.00,  3500.00, 'PENDING'),
+('sf-008', 'stud-002', 'fs-004',  3500.00,    0.00,  3500.00,  1500.00,  2000.00, 'PARTIAL');
+
+INSERT IGNORE INTO `fee_payments` (`id`, `student_fee_id`, `receipt_number`, `payment_date`, `amount`, `payment_mode`, `transaction_id`, `status`, `remarks`) VALUES
+('fp-001', 'sf-001', 'REC-2026-1001', '2026-10-05 11:20:00', 20000.00, 'UPI',        'TXN-UPI-882410',  'SUCCESS', 'Tuition Fee Installment 1'),
+('fp-002', 'sf-002', 'REC-2026-1002', '2026-10-08 14:45:00', 50000.00, 'NETBANKING', 'TXN-NEFT-445109', 'SUCCESS', 'Full Semester 5 Tuition Payment'),
+('fp-003', 'sf-003', 'REC-2026-1003', '2026-10-22 10:15:00',  5000.00, 'CARD',       'TXN-CRD-330912',  'SUCCESS', 'Library & Laboratory Fee Paid'),
+('fp-004', 'sf-004', 'REC-2026-1004', '2026-10-25 16:10:00',  5000.00, 'UPI',        'TXN-UPI-993041',  'SUCCESS', 'Library & Laboratory Fee Paid'),
+('fp-005', 'sf-006', 'REC-2026-1005', '2026-11-02 12:05:00',  4500.00, 'CASH',       'CASH-CTR-0192',   'SUCCESS', 'Development & Sports Fund at Accounts Counter'),
+('fp-006', 'sf-008', 'REC-2026-1006', '2026-11-15 15:30:00',  1500.00, 'UPI',        'TXN-UPI-771294',  'SUCCESS', 'Partial Semester 5 Examination Fee');
 
 -- ============================================================
 -- 23. EXAMS, SCHEDULES & MARKS
@@ -647,9 +711,15 @@ INSERT IGNORE INTO `leaves` (`id`, `user_id`, `leave_type_id`, `start_date`, `en
 -- ============================================================
 -- 27. COMPLAINTS
 -- ============================================================
-INSERT IGNORE INTO `complaints` (`id`, `college_id`, `user_id`, `subject`, `description`, `category`, `status`) VALUES
-('comp-001', 'col-001', 'user-student1', 'Canteen Food Quality', 'The canteen food quality has declined recently.', 'FACILITIES', 'OPEN'),
-('comp-002', 'col-001', 'user-student2', 'Lab Equipment Issue', 'Several computers in LAB-201 are not working.', 'ACADEMICS', 'IN_PROGRESS');
+INSERT IGNORE INTO `complaints` (`id`, `college_id`, `user_id`, `category`, `subject`, `description`, `priority`, `status`, `assigned_to`, `resolution_notes`) VALUES
+('comp-001', 'col-001', 'user-student1', 'IT_LAB',         'Lab Computers & Wi-Fi Disconnections in LAB-201',          'Multiple workstations in IT Block LAB-201 lose internet connectivity during DBMS practical sessions, interrupting lab assessments.', 'HIGH',   'OPEN',        NULL,              NULL),
+('comp-002', 'col-001', 'user-faculty1', 'INFRASTRUCTURE', 'Projector & Audio System Not Working in LH-101',           'The ceiling projector in Main Academic Block LH-101 flickers and the microphone amplifier has no output during morning lectures.',   'HIGH',   'OPEN',        NULL,              NULL),
+('comp-003', 'col-001', 'user-student2', 'LIBRARY',        'Insufficient Reference Copies for CLRS & AI Textbooks',    'Only limited copies of Introduction to Algorithms and Artificial Intelligence: A Modern Approach are available before exams.',       'MEDIUM', 'IN_PROGRESS', 'user-librarian',  'Procurement requisition sent to Library Committee for 10 additional copies.'),
+('comp-004', 'col-001', 'user-parent1',  'TRANSPORT',      'College Bus Route #4 Delayed by 25 Minutes Daily',         'Morning pickup on Route #4 (Sector 12) has been consistently delayed by 20-25 minutes, causing students to miss the 9:00 AM lecture.','HIGH',  'ASSIGNED',    'user-admin',      'Assigned to Transport Coordinator to review route timings and driver schedule.'),
+('comp-005', 'col-001', 'user-student2', 'ACADEMIC',       'Schedule Clash Between Web Lab Viva and Seminar',          'The scheduled Web & Full-Stack Lab internal evaluation overlaps with the department technical seminar slot on Thursday afternoon.',   'MEDIUM', 'OPEN',        NULL,              NULL),
+('comp-006', 'col-001', 'user-parent1',  'FEES',           'Scholarship Discount Reflection on Fee Portal',            'Merit scholarship approval letter was submitted two weeks ago; requesting verification that the Rs. 5,000 concession is applied.',    'MEDIUM', 'IN_PROGRESS', 'user-accountant', 'Under verification with Accounts Officer Robert Ledger; concession verified on sf-001.'),
+('comp-007', 'col-001', 'user-faculty2', 'INFRASTRUCTURE', 'Air Conditioning Maintenance Needed in LAB-202',           'Cooling in IT Block LAB-202 was insufficient during afternoon practicals with 35 students.',                                          'LOW',    'RESOLVED',    'user-admin',      'AC units serviced and coolant refilled by Campus Maintenance team on 12 Nov 2026.'),
+('comp-008', 'col-001', 'user-student1', 'FACILITIES',     'Drinking Water Cooler Filter Replacement — Academic Block','Water dispenser on the 2nd floor of Main Academic Block needed filter replacement and sanitization.',                                  'MEDIUM', 'RESOLVED',    'user-admin',      'RO filter cartridge replaced and water quality tested safe on 09 Nov 2026.');
 
 -- ============================================================
 -- 28. PLACEMENT DRIVES
@@ -697,9 +767,19 @@ INSERT IGNORE INTO `notifications` (`id`, `user_id`, `title`, `message`, `notifi
 -- 32. CALENDAR EVENTS
 -- ============================================================
 INSERT IGNORE INTO `calendar_events` (`id`, `college_id`, `title`, `description`, `event_type`, `start_date`, `end_date`, `is_all_day`) VALUES
-('cal-001', 'col-001', 'Mid-Semester Exams Start',        'Mid-Semester Examinations begin',  'EXAM',     '2026-10-14 00:00:00', '2026-10-20 23:59:00', 1),
-('cal-002', 'col-001', 'Tech Hackathon 2026',              'Annual Hackathon event',            'EVENT',    '2026-10-15 09:00:00', '2026-10-16 09:00:00', 0),
-('cal-003', 'col-001', 'Diwali Holidays',                  'College closed for Diwali',         'HOLIDAY',  '2026-10-29 00:00:00', '2026-11-02 23:59:00', 1),
-('cal-004', 'col-001', 'Last Date for Fee Payment',        'Sem 5 fee payment deadline',        'DEADLINE', '2026-11-30 23:59:00', '2026-11-30 23:59:00', 0);
+('cal-001', 'col-001', 'Mid-Semester Examinations',          'Mid-Semester theory exams for Semester 5 subjects (CS501-CS506).',                  'EXAM',     '2026-10-14 09:00:00', '2026-10-20 17:00:00', 1),
+('cal-002', 'col-001', 'Annual Tech Hackathon 2026',         '24-Hour National level coding hackathon at Main Auditorium.',                       'EVENT',    '2026-10-15 09:00:00', '2026-10-16 18:00:00', 0),
+('cal-003', 'col-001', 'Diwali Vacation',                    'College closed for Diwali festival holidays.',                                      'HOLIDAY',  '2026-10-29 00:00:00', '2026-11-02 23:59:00', 1),
+('cal-004', 'col-001', 'Assignment 2 Submission Deadline',   'Online submission deadline for CS504 (DSA) and CS505 (OS) assignments.',            'DEADLINE', '2026-11-20 17:00:00', '2026-11-20 23:59:00', 0),
+('cal-005', 'col-001', 'Parent-Teacher Meeting (PTM)',       'Semester 5 academic progress & attendance review with parents in Main Block.',      'ACADEMIC', '2026-11-21 10:00:00', '2026-11-21 14:00:00', 0),
+('cal-006', 'col-001', 'Internal Lab Practical Assessments', 'DBMS Lab (LAB-201) and Web Lab (LAB-202) internal practical evaluations.',          'EXAM',     '2026-11-25 09:00:00', '2026-11-26 16:00:00', 0),
+('cal-007', 'col-001', 'Constitution Day Guest Seminar',     'Special lecture on Ethics & Technology in Main Auditorium.',                        'EVENT',    '2026-11-26 11:00:00', '2026-11-26 13:00:00', 0),
+('cal-008', 'col-001', 'Annual Sports & Cultural Fest',      'Inter-department sports tournaments and cultural evening on Main Campus Ground.',   'EVENT',    '2026-11-28 09:00:00', '2026-11-29 18:00:00', 0),
+('cal-009', 'col-001', 'Semester 5 Fee Payment Deadline',    'Last date to pay Semester 5 tuition & library fees without late penalty.',          'DEADLINE', '2026-11-30 09:00:00', '2026-11-30 17:00:00', 1),
+('cal-010', 'col-001', 'Mini-Project Submission & Viva',     'Final submission and live demonstration of CSE Semester 5 mini-projects.',          'DEADLINE', '2026-12-04 10:00:00', '2026-12-05 16:00:00', 0),
+('cal-011', 'col-001', 'Preparatory Study Leave',            'Pre-examination preparatory leave before End-Semester University Exams.',           'ACADEMIC', '2026-12-07 00:00:00', '2026-12-11 23:59:00', 1),
+('cal-012', 'col-001', 'End-Semester University Exams',      'Final written examinations for Semester 5 (CS501 through CS506).',                  'EXAM',     '2026-12-14 09:00:00', '2026-12-22 17:00:00', 1),
+('cal-013', 'col-001', 'Christmas & Winter Break',           'College closed for Christmas and New Year winter vacation.',                        'HOLIDAY',  '2026-12-25 00:00:00', '2027-01-01 23:59:00', 1),
+('cal-014', 'col-001', 'Semester 6 Classes Commence',        'Commencement of Spring Semester 6 academic sessions.',                              'ACADEMIC', '2027-01-04 09:00:00', '2027-01-04 17:00:00', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;

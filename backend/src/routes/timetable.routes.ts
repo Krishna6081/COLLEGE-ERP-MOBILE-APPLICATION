@@ -8,5 +8,7 @@ router.use(authenticate);
 
 router.get('/', requirePermission('timetable.view'), TimetableController.getTimetable);
 router.post('/', requirePermission('timetable.manage'), TimetableController.create);
+router.get('/calendar', requirePermission('timetable.view'), TimetableController.getCalendarEvents);
+router.post('/calendar', requirePermission('timetable.manage'), TimetableController.createCalendarEvent);
 
 export default router;

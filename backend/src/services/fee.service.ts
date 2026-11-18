@@ -6,12 +6,46 @@ import { v4 as uuidv4 } from 'uuid';
 export class FeeService {
   static async getStudentFees(studentId: string, collegeId?: string) {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT sf.*, fs.fee_head, fs.due_date
+      `SELECT sf.*, fs.fee_head, fs.due_date,
+              CONCAT(s.first_name, ' ', s.last_name) as student_name, s.enrollment_number
        FROM student_fees sf
        INNER JOIN fee_structures fs ON sf.fee_structure_id = fs.id
        INNER JOIN students s ON sf.student_id = s.id
-       WHERE s.id = ?${collegeId ? ' AND s.college_id = ?' : ''}`,
+       WHERE s.id = ?${collegeId ? ' AND s.college_id = ?' : ''}
+       ORDER BY FIELD(sf.status, 'OVERDUE', 'PENDING', 'PARTIAL', 'PAID'), fs.due_date ASC`,
       collegeId ? [studentId, collegeId] : [studentId]
+    );
+    return rows;
+  }
+
+  static async getAllCollegeFees(collegeId?: string) {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT sf.*, fs.fee_head, fs.due_date,
+              CONCAT(s.first_name, ' ', s.last_name) as student_name,
+              s.enrollment_number, s.email as student_email
+       FROM student_fees sf
+       INNER JOIN fee_structures fs ON sf.fee_structure_id = fs.id
+       INNER JOIN students s ON sf.student_id = s.id
+       ${collegeId ? 'WHERE s.college_id = ?' : ''}
+       ORDER BY FIELD(sf.status, 'OVERDUE', 'PENDING', 'PARTIAL', 'PAID'), fs.due_date ASC`,
+      collegeId ? [collegeId] : []
+    );
+    return rows;
+  }
+
+  static async getRecentPayments(collegeId?: string, limit = 50) {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT fp.*, fs.fee_head,
+              CONCAT(s.first_name, ' ', s.last_name) as student_name,
+              s.enrollment_number
+       FROM fee_payments fp
+       INNER JOIN student_fees sf ON fp.student_fee_id = sf.id
+       INNER JOIN fee_structures fs ON sf.fee_structure_id = fs.id
+       INNER JOIN students s ON sf.student_id = s.id
+       ${collegeId ? 'WHERE s.college_id = ?' : ''}
+       ORDER BY fp.payment_date DESC
+       LIMIT ?`,
+      collegeId ? [collegeId, limit] : [limit]
     );
     return rows;
   }

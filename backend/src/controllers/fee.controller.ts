@@ -20,10 +20,26 @@ export class FeeController {
         const isSuperAdmin = user.user_type === 'SUPER_ADMIN' || user.roles.includes('SUPER_ADMIN');
         if (!isSuperAdmin && !user.permissions.includes('fees.view')) throw new AuthorizationError();
         if (!isSuperAdmin && !user.college_id) throw new AuthorizationError('College scope is required');
-        if (!req.params.studentId) throw new ValidationError('Student ID is required for this role');
-        fees = await FeeService.getStudentFees(req.params.studentId, isSuperAdmin ? undefined : user.college_id!);
+        if (req.params.studentId) {
+          fees = await FeeService.getStudentFees(req.params.studentId, isSuperAdmin ? undefined : user.college_id!);
+        } else {
+          fees = await FeeService.getAllCollegeFees(isSuperAdmin ? undefined : user.college_id!);
+        }
       }
       return ApiResponse.success(res, 'Student fees fetched', fees);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getPayments(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const user = req.user!;
+      const isSuperAdmin = user.user_type === 'SUPER_ADMIN' || user.roles.includes('SUPER_ADMIN');
+      if (!isSuperAdmin && !user.college_id) throw new AuthorizationError('College scope is required');
+      const limit = Math.min(Number(req.query.limit) || 50, 100);
+      const payments = await FeeService.getRecentPayments(isSuperAdmin ? undefined : user.college_id!, limit);
+      return ApiResponse.success(res, 'Fee payments fetched', payments);
     } catch (error) {
       next(error);
     }

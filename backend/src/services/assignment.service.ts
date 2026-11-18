@@ -20,14 +20,14 @@ export class AssignmentService {
 
     let query = `
       SELECT a.*, sub.name as subject_name, sub.code as subject_code,
-             div.name as division_name,
+             dv.name as division_name,
              CONCAT(f.first_name, ' ', f.last_name) as faculty_name,
              COUNT(asub.id) as total_submissions,
              COUNT(CASE WHEN asub.status = 'EVALUATED' THEN 1 END) as evaluated_count
       FROM assignments a
       JOIN subjects sub ON a.subject_id = sub.id
-      JOIN divisions div ON a.division_id = div.id
-      JOIN courses c ON c.id = div.course_id AND sub.course_id = c.id
+      JOIN divisions dv ON a.division_id = dv.id
+      JOIN courses c ON c.id = dv.course_id AND sub.course_id = c.id
       JOIN departments dept ON dept.id = sub.department_id
       JOIN programs p ON p.id = c.program_id AND p.department_id = dept.id AND p.college_id = dept.college_id
       JOIN faculty f ON a.faculty_id = f.id AND f.college_id = p.college_id
@@ -96,12 +96,12 @@ export class AssignmentService {
       queryParams.push(scope.hod_user_id);
     }
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT a.*, sub.name as subject_name, div.name as division_name,
+      `SELECT a.*, sub.name as subject_name, dv.name as division_name,
               CONCAT(f.first_name, ' ', f.last_name) as faculty_name
        FROM assignments a
        JOIN subjects sub ON a.subject_id = sub.id
-       JOIN divisions div ON a.division_id = div.id
-       JOIN courses c ON c.id = div.course_id AND sub.course_id = c.id
+       JOIN divisions dv ON a.division_id = dv.id
+       JOIN courses c ON c.id = dv.course_id AND sub.course_id = c.id
        JOIN departments dept ON dept.id = sub.department_id
        JOIN programs p ON p.id = c.program_id AND p.department_id = dept.id AND p.college_id = dept.college_id
        JOIN faculty f ON a.faculty_id = f.id
@@ -149,11 +149,11 @@ export class AssignmentService {
       `SELECT f.id
        FROM subjects sub
        JOIN departments dept ON dept.id = sub.department_id
-       JOIN divisions div ON div.id = ? AND div.course_id = sub.course_id AND div.status = 'ACTIVE'
-       JOIN semesters sem ON sem.id = div.semester_id AND sem.status = 'ACTIVE'
-       JOIN courses c ON c.id = div.course_id
+       JOIN divisions dv ON dv.id = ? AND dv.course_id = sub.course_id AND dv.status = 'ACTIVE'
+       JOIN semesters sem ON sem.id = dv.semester_id AND sem.status = 'ACTIVE'
+       JOIN courses c ON c.id = dv.course_id
        JOIN programs p ON p.id = c.program_id AND p.department_id = sub.department_id AND p.college_id = dept.college_id
-       JOIN faculty_subjects fs ON fs.subject_id = sub.id AND fs.division_id = div.id
+       JOIN faculty_subjects fs ON fs.subject_id = sub.id AND fs.division_id = dv.id
          AND fs.semester_id = sem.id
        JOIN academic_years ay ON ay.id = fs.academic_year_id AND ay.id = sem.academic_year_id
          AND ay.college_id = dept.college_id AND ay.status = 'ACTIVE'
@@ -216,8 +216,8 @@ export class AssignmentService {
          JOIN students s ON asub.student_id = s.id
          LEFT JOIN departments d ON s.department_id = d.id
          JOIN assignments a ON a.id = asub.assignment_id
-         JOIN divisions div ON div.id = a.division_id
-         JOIN courses c ON c.id = div.course_id
+         JOIN divisions dv ON dv.id = a.division_id
+         JOIN courses c ON c.id = dv.course_id
          JOIN programs p ON p.id = c.program_id
          WHERE asub.assignment_id = ? AND p.college_id = ? AND s.college_id = p.college_id
          ORDER BY asub.submitted_at ASC`,
@@ -242,8 +242,8 @@ export class AssignmentService {
       `SELECT a.id, a.status, a.deadline, s.id AS student_id
        FROM assignments a
        JOIN subjects sub ON sub.id = a.subject_id
-       JOIN divisions div ON div.id = a.division_id AND div.course_id = sub.course_id
-       JOIN courses c ON c.id = div.course_id
+       JOIN divisions dv ON dv.id = a.division_id AND dv.course_id = sub.course_id
+       JOIN courses c ON c.id = dv.course_id
        JOIN programs p ON p.id = c.program_id AND p.department_id = sub.department_id
        JOIN students s ON s.user_id = ? AND s.college_id = p.college_id
          AND s.division_id = a.division_id AND s.status = 'ACTIVE'
@@ -299,8 +299,8 @@ export class AssignmentService {
     const [submissions] = await pool.query<RowDataPacket[]>(
       `SELECT asub.*, a.total_marks, evaluator.id AS evaluator_id FROM assignment_submissions asub
        JOIN assignments a ON asub.assignment_id = a.id
-       JOIN divisions div ON div.id = a.division_id
-       JOIN courses c ON c.id = div.course_id
+       JOIN divisions dv ON dv.id = a.division_id
+       JOIN courses c ON c.id = dv.course_id
        JOIN programs p ON p.id = c.program_id
        JOIN faculty owner ON owner.id = a.faculty_id AND owner.college_id = p.college_id
        JOIN faculty evaluator ON evaluator.user_id = ? AND evaluator.college_id = p.college_id

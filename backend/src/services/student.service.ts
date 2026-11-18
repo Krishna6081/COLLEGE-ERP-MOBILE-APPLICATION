@@ -10,12 +10,12 @@ export class StudentService {
     const offset = (page - 1) * limit;
 
     let query = `
-      SELECT s.*, d.name as department_name, p.name as program_name, c.name as course_name, div.name as division_name 
+      SELECT s.*, d.name as department_name, p.name as program_name, c.name as course_name, dv.name as division_name 
       FROM students s
       LEFT JOIN departments d ON s.department_id = d.id
       LEFT JOIN programs p ON s.program_id = p.id
       LEFT JOIN courses c ON s.course_id = c.id
-      LEFT JOIN divisions div ON s.division_id = div.id
+      LEFT JOIN divisions dv ON s.division_id = dv.id
       WHERE s.status != 'SUSPENDED'
     `;
     const queryParams: any[] = [];

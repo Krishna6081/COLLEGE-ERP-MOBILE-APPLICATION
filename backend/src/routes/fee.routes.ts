@@ -7,6 +7,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/student/:studentId?', FeeController.getStudentFees);
+router.get('/payments', requirePermission('fees.view'), FeeController.getPayments);
 router.post('/pay', requirePermission('fees.payment.record'), FeeController.recordPayment);
 
 export default router;

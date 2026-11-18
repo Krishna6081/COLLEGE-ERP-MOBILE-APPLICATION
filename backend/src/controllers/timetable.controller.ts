@@ -44,4 +44,32 @@ export class TimetableController {
       next(error);
     }
   }
+
+  static async getCalendarEvents(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const user = req.user!;
+      const { month, year, event_type, college_id: requestedCollegeId } = req.query as any;
+      const isSuperAdmin = user.user_type === 'SUPER_ADMIN' || user.roles.includes('SUPER_ADMIN');
+      const college_id = requireCollegeId(isSuperAdmin && requestedCollegeId ? requestedCollegeId : user.college_id);
+      const events = await TimetableService.getCalendarEvents({
+        college_id,
+        month: month ? Number(month) : undefined,
+        year: year ? Number(year) : undefined,
+        event_type: event_type ? String(event_type) : undefined,
+      });
+      return ApiResponse.success(res, 'Calendar events fetched successfully', events);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async createCalendarEvent(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const college_id = requireCollegeId(req.user?.college_id);
+      const event = await TimetableService.createCalendarEvent(req.body, college_id);
+      return ApiResponse.success(res, 'Calendar event created', event, 201);
+    } catch (error) {
+      next(error);
+    }
+  }
 }

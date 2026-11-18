@@ -306,11 +306,13 @@ export class LibraryService {
 
     let query = `
       SELECT bi.id, bi.issue_date, bi.due_date, bi.return_date, bi.fine_amount, bi.status,
-             b.title as book_title, b.author, b.ISBN,
-             u.first_name, u.last_name, u.email, u.user_type
+             b.title as book_title, b.title, b.author, b.ISBN,
+             u.first_name, u.last_name, u.email, u.user_type,
+             s.enrollment_number
       FROM book_issues bi
       JOIN books b ON bi.book_id = b.id
       JOIN users u ON bi.user_id = u.id
+      LEFT JOIN students s ON s.user_id = u.id
       WHERE b.college_id = ?
     `;
     const params2: any[] = [college_id];

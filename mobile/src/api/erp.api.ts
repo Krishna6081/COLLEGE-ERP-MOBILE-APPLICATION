@@ -40,14 +40,20 @@ export class ErpApi {
     return await apiClient.post('/attendance', data);
   }
 
-  // ── Timetable ──────────────────────────────────────────
+  // ── Timetable & Calendar ───────────────────────────────
   static async getTimetable(params?: any): Promise<ApiResponse<any>> {
     return await apiClient.get('/timetable', { params });
+  }
+  static async getCalendarEvents(params?: any): Promise<ApiResponse<any>> {
+    return await apiClient.get('/timetable/calendar', { params });
   }
 
   // ── Fees ───────────────────────────────────────────────
   static async getStudentFees(): Promise<ApiResponse<any>> {
     return await apiClient.get('/fees/student');
+  }
+  static async getFeePayments(params?: any): Promise<ApiResponse<any>> {
+    return await apiClient.get('/fees/payments', { params });
   }
   static async recordFeePayment(data: any): Promise<ApiResponse<any>> {
     return await apiClient.post('/fees/pay', data);

@@ -151,13 +151,13 @@ export class DashboardService {
             const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
             const todayDay = days[new Date().getDay()];
             const [todayLectures] = await queryRows(`SELECT tt.id as timetable_id, tt.subject_id, tt.division_id, tt.batch_id,
-                tt.start_time, tt.end_time, sub.name as subject, div.name as division,
+                tt.start_time, tt.end_time, sub.name as subject, dv.name as division,
                 cr.room_number
          FROM timetables tt
          JOIN academic_years ay ON tt.academic_year_id = ay.id AND ay.college_id = tt.college_id
          JOIN semesters sem ON tt.semester_id = sem.id AND sem.academic_year_id = ay.id
-         JOIN divisions div ON tt.division_id = div.id AND div.semester_id = sem.id
-         JOIN courses c ON div.course_id = c.id
+         JOIN divisions dv ON tt.division_id = dv.id AND dv.semester_id = sem.id
+         JOIN courses c ON dv.course_id = c.id
          JOIN programs p ON c.program_id = p.id AND p.college_id = tt.college_id
          JOIN subjects sub ON tt.subject_id = sub.id AND sub.course_id = c.id
          JOIN classrooms cr ON tt.classroom_id = cr.id AND cr.college_id = tt.college_id
@@ -348,17 +348,19 @@ export class DashboardService {
            SUM(sf.net_amount) as total_demanded,
            SUM(sf.paid_amount) as total_collected,
            SUM(sf.due_amount) as total_pending,
-           COUNT(CASE WHEN sf.status = 'OVERDUE' THEN 1 END) as overdue_count,
-           COUNT(CASE WHEN sf.status = 'PENDING' THEN 1 END) as pending_count
+           COUNT(DISTINCT CASE WHEN sf.status = 'OVERDUE' THEN sf.student_id END) as overdue_count,
+           COUNT(DISTINCT CASE WHEN sf.due_amount > 0 THEN sf.student_id END) as pending_count
          FROM student_fees sf
          JOIN students s ON sf.student_id = s.id
          WHERE s.college_id = ?`, [cid]);
             const [recentPayments] = await queryRows(`SELECT fp.receipt_number, fp.amount, fp.payment_mode, fp.payment_date,
+                fs.fee_head,
                 CONCAT(s.first_name, ' ', s.last_name) as student_name
          FROM fee_payments fp
          JOIN student_fees sf ON fp.student_fee_id = sf.id
+         JOIN fee_structures fs ON sf.fee_structure_id = fs.id
          JOIN students s ON sf.student_id = s.id
-         WHERE s.college_id = ? ORDER BY fp.payment_date DESC LIMIT 5`, [cid]);
+         WHERE s.college_id = ? ORDER BY fp.payment_date DESC LIMIT 10`, [cid]);
             return {
                 role: 'ACCOUNTANT',
                 total_demanded: Number(feeStats[0]?.total_demanded || 0),
